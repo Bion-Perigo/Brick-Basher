@@ -49,7 +49,7 @@ endif
 # Set Auto Config
 TARGET = $(notdir $(CURDIR))
 BUILD_DIR = build/
-OBJ_DIR = $(BUILD_DIR)$(COMPILE_MODE)obj/
+OBJ_DIR = $(BUILD_DIR)obj/$(COMPILE_MODE)
 SRC_DIR = source/
 INCLUDE_DIR = $(SRC_DIR)include/
 CONTENT_DIR = content/
@@ -63,6 +63,7 @@ all: $(TARGET)
 install:
 	@echo "Stating Compiling => Platform:$(PLATFORM), Compiler:$(CC), Mode:$(config)"
 	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)$(COMPILE_MODE)
 	@mkdir -p $(OBJ_DIR)
 	@mkdir -p $(SRC_DIR)
 	@mkdir -p $(INCLUDE_DIR)

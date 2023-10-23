@@ -1,4 +1,5 @@
 CC = clang
+INCLUDES = -Isource/include
 CDEFINES =
 CFLAGS =
 LIBS =
@@ -81,7 +82,7 @@ run: $(TARGET)
 
 $(TARGET): install $(OBJ)
 	@echo "Linking => $(BUILD_DIR)$(COMPILE_MODE)$(TARGET)$(EXTENCION)"
-	@$(CC) $(OBJ) $(CFLAGS) $(CDEFINES) $(LIBS) -o $(BUILD_DIR)$(COMPILE_MODE)$(TARGET)$(EXTENCION)
+	@$(CC) $(OBJ) $(INCLUDES) $(CFLAGS) $(CDEFINES) $(LIBS) -o $(BUILD_DIR)$(COMPILE_MODE)$(TARGET)$(EXTENCION)
 	@$(CL_CCJ)
 	@$(CREATE_DATA)
 	@$(COPY_CONFIG)
@@ -89,16 +90,16 @@ $(TARGET): install $(OBJ)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c
 	@echo "Compiling:$<..."
-	@$(CC) $(CL_JSON) $< $(CFLAGS) $(CDEFINES) -c -o $@
+	@$(CC) $(CL_JSON) $< $(INCLUDES) $(CFLAGS) $(CDEFINES) -c -o $@
 
 $(OBJ_DIR)%.o: $(SRC_DIR)*/%.c
 	@echo "Compiling:$<..."
-	@$(CC) $(CL_JSON) $< $(CFLAGS) $(CDEFINES) -c -o $@
+	@$(CC) $(CL_JSON) $< $(INCLUDES) $(CFLAGS) $(CDEFINES) -c -o $@
 
 $(OBJ_DIR)%.o: $(SRC_DIR)*/*/%.c
 	@echo "Compiling:$<..."
-	@$(CC) $(CL_JSON) $< $(CFLAGS) $(CDEFINES) -c -o $@
+	@$(CC) $(CL_JSON) $< $(INCLUDES) $(CFLAGS) $(CDEFINES) -c -o $@
 
 $(OBJ_DIR)%.o: $(SRC_DIR)*/*/*/%.c
 	@echo "Compiling:$<..."
-	@$(CC) $(CL_JSON) $< $(CFLAGS) $(CDEFINES) -c -o $@
+	@$(CC) $(CL_JSON) $< $(INCLUDES) $(CFLAGS) $(CDEFINES) -c -o $@

@@ -2,7 +2,7 @@ CC = clang
 INCLUDES = -Isource/include
 CDEFINES =
 CFLAGS =
-LIBS =
+LIBS = -lm
 
 # Generating clang files
 ifeq ($(CC), clang)

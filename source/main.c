@@ -3,32 +3,49 @@
 #include "core.h"
 
 #include <GL/glcorearb.h>
+#include <X11/X.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-struct vector3 {
+// Test
+struct vector3_f {
   float x;
   float y;
   float z;
 };
 
+struct transform_f {
+  struct vector3_f position;
+  struct vector3_f rotation;
+  struct vector3_f scale;
+};
+
+struct sprite_f {
+  unsigned int projection;
+  unsigned int myColor_id;
+  unsigned int shader_id;
+  unsigned int vao_id;
+  float color[4];
+};
+
 struct actor {
-  bool is_dirty;
   float speed;
   float angle;
-  struct vector3 position;
-  struct vector3 rotation;
-  struct vector3 scale;
+  struct transform_f transform;
+  struct sprite_f sprite;
   struct mat4_f model;
 };
 
+struct sprite_f init_sprite(float r, float g, float b, float a);
+void update_player_controller(struct actor *actor);
 void set_actor_transform(struct actor *actor);
-void update_control(struct actor *actor);
-void init_rect();
+void update_actor(struct actor *actor);
+void render_sprite(struct actor *actor);
 
 struct mat4_f perspective = {0};
-GLuint uniform_proj = 0;
+
+// Test
 
 int main(int argc, char *argv[]) {
   G_LOG(LOG_INFO, "Hello World");
@@ -42,25 +59,31 @@ int main(int argc, char *argv[]) {
 
   init_window_p(width, height, "Brick-Basher");
 
-  init_rect();
+  // Initialize Player
+  struct actor player = {0};
+  player.sprite = init_sprite(YELLOW);
+  player.transform.scale.x = 1;
+  player.transform.scale.y = 1;
+  player.transform.scale.z = 1;
+  player.speed = 0.01f;
+  player.angle = 1.f;
 
-  const char *vertex = FIND_ASSET("shader/default_vertex.vert");
-  const char *fragment = FIND_ASSET("shader/default_fragment.frag");
+  // Initialize Enemy
+  struct actor enemy = {0};
+  enemy.sprite = init_sprite(RED);
+  enemy.transform.scale.x = 1;
+  enemy.transform.scale.y = 1;
+  enemy.transform.scale.z = 1;
+  enemy.speed = 0.01f;
+  enemy.angle = 1.f;
 
-  shader_f shader = load_shader_f(vertex, fragment);
-  GL.glUseProgram(shader);
+  enemy.transform.position.x = 2.f;
+  enemy.transform.position.z = -2.f;
 
-  perspective = matrix_init_perspective_f(1.0f, ((float)width / (float)height), 0.0f, 2.0f);
-  uniform_proj = GL.glGetUniformLocation(shader, "proj");
+  // Initialize Perspective
+  perspective = matrix_init_perspective_f(1.f, ((float)width / height), 0.f, 2.f);
 
-  struct actor quad = {0};
-  quad.scale.x = 1;
-  quad.scale.y = 1;
-  quad.scale.z = 1;
-
-  quad.is_dirty = false;
-  quad.speed = 0.01f;
-  quad.angle = 1.f;
+  struct actor *actors[2] = {&player, &enemy};
 
   while (!window_should_close_p()) {
     // Update
@@ -75,15 +98,16 @@ int main(int argc, char *argv[]) {
     }
 
     // Inputs
-    update_control(&quad);
+    update_player_controller(&player);
 
     // Draw
     begin_drawing_p();
     clear_background_p(DARK_GRAY);
 
-    set_actor_transform(&quad);
+    for (int i = 0; i < 2; i++) { // Update all actors
+      update_actor(actors[i]);
+    }
 
-    GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
     end_drawing_p();
   }
 
@@ -92,88 +116,18 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-void set_actor_transform(struct actor *actor) {
-  struct mat4_f m_translation =
-      matrix_init_translation_f(actor->position.x, actor->position.y, actor->position.z);
-  struct mat4_f m_rotation = matrix_init_rotation_f(actor->rotation.x, actor->rotation.y, actor->rotation.z);
-  struct mat4_f m_scale = matrix_init_scale_f(actor->scale.x, actor->scale.y, actor->scale.z);
-
-  struct mat4_f m_transform = matrix_mult_f(m_rotation, m_scale);
-  m_transform = matrix_mult_f(m_translation, m_transform);
-  actor->model = matrix_mult_f(perspective, m_transform);
-
-  GL.glUniformMatrix4fv(uniform_proj, 1, 0, (const float *)actor->model.e);
-}
-
-void update_control(struct actor *actor) {
-  if (is_key_repeat_f(KEY_W)) {
-    actor->position.y += actor->speed;
-    actor->is_dirty = true;
-    G_LOG(LOG_INFO, "KEY_W Pressed:%f", actor->position.y);
-  }
-
-  if (is_key_repeat_f(KEY_S)) {
-    actor->position.y -= actor->speed;
-    G_LOG(LOG_INFO, "KEY_S Pressed:%f", actor->position.y);
-  }
-
-  if (is_key_repeat_f(KEY_A)) {
-    G_LOG(LOG_INFO, "KEY_A Pressed");
-    actor->position.x -= actor->speed;
-  }
-  if (is_key_repeat_f(KEY_D)) {
-    G_LOG(LOG_INFO, "KEY_S Pressed");
-    actor->position.x += actor->speed;
-  }
-  if (is_key_repeat_f(KEY_R)) {
-    G_LOG(LOG_INFO, "KEY_R Pressed");
-    actor->position.z -= actor->speed;
-  }
-  if (is_key_repeat_f(KEY_F)) {
-    G_LOG(LOG_INFO, "KEY_F Pressed");
-    actor->position.z += actor->speed;
-  }
-
-  if (is_key_repeat_f(KEY_LEFT)) {
-    actor->rotation.y += -1 * actor->angle;
-    G_LOG(LOG_INFO, "KEY_LEFT Repeat:Y%f", actor->rotation.y);
-  }
-  if (is_key_repeat_f(KEY_RIGHT)) {
-    actor->rotation.y += actor->angle;
-    G_LOG(LOG_INFO, "KEY_RIGHT Repeat:Y%f", actor->rotation.y);
-  }
-
-  if (is_key_repeat_f(KEY_UP)) {
-    actor->rotation.x += -1 * actor->angle;
-    G_LOG(LOG_INFO, "KEY_UP Repeat:X%f", actor->rotation.x);
-  }
-  if (is_key_repeat_f(KEY_DOWN)) {
-    actor->rotation.x += actor->angle;
-    G_LOG(LOG_INFO, "KEY_DOWN Repeat:X%f", actor->rotation.x);
-  }
-
-  if (is_key_repeat_f(KEY_E)) {
-    actor->rotation.z += -1 * actor->angle;
-    G_LOG(LOG_INFO, "KEY_UP Repeat:E%f", actor->rotation.z);
-  }
-  if (is_key_repeat_f(KEY_Q)) {
-    actor->rotation.z += actor->angle;
-    G_LOG(LOG_INFO, "KEY_DOWN Repeat:Q%f", actor->rotation.z);
-  }
-}
-
-void init_rect() {
-
+struct sprite_f init_sprite(float r, float g, float b, float a) {
+  struct sprite_f sprite = {0};
   unsigned int vao, vbo, ibo;
 
   GL.glGenVertexArrays(1, &vao);
   GL.glBindVertexArray(vao);
 
   float vertices[] = {
-      -0.5f, -0.5f, 0.f, RED,   // Botton Left
-      0.5f,  -0.5f, 0.f, GREEN, // Botton Right
-      0.5f,  0.5f,  0.f, BLUE,  // Top Right
-      -0.5f, 0.5f,  0.f, YELLOW // Top Left
+      -0.5f, -0.5f, 0.f, WHITE, // Botton Left
+      0.5f,  -0.5f, 0.f, WHITE, // Botton Right
+      0.5f,  0.5f,  0.f, WHITE, // Top Right
+      -0.5f, 0.5f,  0.f, WHITE  // Top Left
   };
 
   GL.glGenBuffers(1, &vbo);
@@ -190,4 +144,95 @@ void init_rect() {
   GL.glGenBuffers(1, &ibo);
   GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
   GL.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(index), index, GL_STATIC_DRAW);
+
+  const char *vertex = FIND_ASSET("shader/default_vertex.vert");
+  const char *fragment = FIND_ASSET("shader/default_fragment.frag");
+
+  sprite.shader_id = load_shader_f(vertex, fragment);
+  sprite.projection = GL.glGetUniformLocation(sprite.shader_id, "proj");
+  sprite.myColor_id = GL.glGetUniformLocation(sprite.shader_id, "myColor");
+  sprite.vao_id = vao;
+  sprite.color[0] = r;
+  sprite.color[1] = g;
+  sprite.color[2] = b;
+  sprite.color[3] = a;
+
+  G_LOG(LOG_INFO, "Init Sprite: Shader:%u, Proj:%u, VAO:%u", sprite.shader_id, sprite.projection, sprite.vao_id);
+
+  return sprite;
+}
+
+void update_player_controller(struct actor *actor) {
+  if (is_key_repeat_f(KEY_W)) {
+    actor->transform.position.y += actor->speed;
+  }
+
+  if (is_key_repeat_f(KEY_S)) {
+    actor->transform.position.y -= actor->speed;
+  }
+
+  if (is_key_repeat_f(KEY_A)) {
+    actor->transform.position.x -= actor->speed;
+  }
+  if (is_key_repeat_f(KEY_D)) {
+    actor->transform.position.x += actor->speed;
+  }
+  if (is_key_repeat_f(KEY_R)) {
+    actor->transform.position.z -= actor->speed;
+  }
+  if (is_key_repeat_f(KEY_F)) {
+    actor->transform.position.z += actor->speed;
+  }
+
+  if (is_key_repeat_f(KEY_LEFT)) {
+    actor->transform.rotation.y += -1 * actor->angle;
+  }
+  if (is_key_repeat_f(KEY_RIGHT)) {
+    actor->transform.rotation.y += actor->angle;
+  }
+
+  if (is_key_repeat_f(KEY_UP)) {
+    actor->transform.rotation.x += -1 * actor->angle;
+  }
+  if (is_key_repeat_f(KEY_DOWN)) {
+    actor->transform.rotation.x += actor->angle;
+  }
+
+  if (is_key_repeat_f(KEY_E)) {
+    actor->transform.rotation.z += -1 * actor->angle;
+  }
+  if (is_key_repeat_f(KEY_Q)) {
+    actor->transform.rotation.z += actor->angle;
+  }
+}
+
+void set_actor_transform(struct actor *actor) {
+  struct vector3_f *pos = &actor->transform.position;
+  struct vector3_f *rot = &actor->transform.rotation;
+  struct vector3_f *sca = &actor->transform.scale;
+
+  struct mat4_f m_translation = matrix_init_translation_f(pos->x, pos->y, pos->z);
+  struct mat4_f m_rotation = matrix_init_rotation_f(rot->x, rot->y, rot->z);
+  struct mat4_f m_scale = matrix_init_scale_f(sca->x, sca->y, sca->z);
+
+  struct mat4_f m_transform = {0};
+  m_transform = matrix_mult_f(m_rotation, m_scale);
+  m_transform = matrix_mult_f(m_translation, m_transform);
+
+  actor->model = matrix_mult_f(perspective, m_transform);
+
+  GL.glUniformMatrix4fv(actor->sprite.projection, 1, 0, (const float *)actor->model.e);
+  GL.glUniform4fv(actor->sprite.myColor_id, 1, (const float *)actor->sprite.color);
+}
+
+void update_actor(struct actor *actor) {
+  set_actor_transform(actor);
+  render_sprite(actor);
+}
+
+void render_sprite(struct actor *actor) {
+  GL.glUseProgram(actor->sprite.shader_id);
+  GL.glBindVertexArray(actor->sprite.vao_id);
+  GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+  GL.glBindVertexArray(0);
 }

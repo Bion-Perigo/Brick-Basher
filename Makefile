@@ -37,8 +37,8 @@ else
 COMPILE_MODE = release/
 CFLAGS += 
 CDEFINES += -DRELEASE_MODE
-CDEFINES += -D"CONTENT_PATH=data/$(CONTENT_PATH)/"
-CDEFINES += -D"CONFIG_PATH=$data/$(CONFIG_PATH)/"
+CDEFINES += -D"CONTENT_PATH=data/content/"
+CDEFINES += -D"CONFIG_PATH=data/config/"
 
 # Copy files in release mode
 CREATE_DATA = @mkdir -p $(BUILD_DIR)/$(COMPILE_MODE)/data

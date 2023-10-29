@@ -2,7 +2,7 @@ CC = clang
 INCLUDES = -Isource/include
 CDEFINES =
 CFLAGS =
-LIBS = -lm
+LIBS = 
 
 # Generating clang files
 ifeq ($(CC), clang)
@@ -22,7 +22,7 @@ else ifeq ($(PLATFORM), Linux)
 EXTENCION = 
 CDEFINES += -DPLATFORM_LINUX
 CFLAGS += -std=gnu99
-LIBS += 
+LIBS += -lm
 endif
 
 # Set Compile Mode

@@ -1,12 +1,4 @@
-#include "GL/gl_api.h"
-#include "GL/glcorearb.h"
 #include "core.h"
-
-#include <GL/glcorearb.h>
-#include <X11/X.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdio.h>
 
 // Test
 struct vector3_f {
@@ -22,26 +14,16 @@ struct transform_f {
 };
 
 struct sprite_f {
-  unsigned int projection;
+  struct transform_f transform;
+  unsigned int model_id;
   unsigned int myColor_id;
   unsigned int shader_id;
   unsigned int vao_id;
   float color[4];
 };
 
-struct actor {
-  float speed;
-  float angle;
-  struct transform_f transform;
-  struct sprite_f sprite;
-  struct mat4_f model;
-};
-
 struct sprite_f init_sprite(float r, float g, float b, float a);
-void update_player_controller(struct actor *actor);
-void set_actor_transform(struct actor *actor);
-void update_actor(struct actor *actor);
-void render_sprite(struct actor *actor);
+void draw_actor(struct sprite_f *actor);
 
 struct mat4_f perspective = {0};
 
@@ -60,30 +42,11 @@ int main(int argc, char *argv[]) {
   init_window_p(width, height, "Brick-Basher");
 
   // Initialize Player
-  struct actor player = {0};
-  player.sprite = init_sprite(YELLOW);
-  player.transform.scale.x = 1;
-  player.transform.scale.y = 1;
-  player.transform.scale.z = 1;
-  player.speed = 0.01f;
-  player.angle = 1.f;
-
-  // Initialize Enemy
-  struct actor enemy = {0};
-  enemy.sprite = init_sprite(RED);
-  enemy.transform.scale.x = 1;
-  enemy.transform.scale.y = 1;
-  enemy.transform.scale.z = 1;
-  enemy.speed = 0.01f;
-  enemy.angle = 1.f;
-
-  enemy.transform.position.x = 2.f;
-  enemy.transform.position.z = -2.f;
+  float speed = 1.f;
+  struct sprite_f player = init_sprite(YELLOW);
 
   // Initialize Perspective
   perspective = matrix_init_perspective_f(1.f, ((float)width / height), 0.f, 2.f);
-
-  struct actor *actors[2] = {&player, &enemy};
 
   while (!window_should_close_p()) {
     // Update
@@ -97,16 +60,18 @@ int main(int argc, char *argv[]) {
       break;
     }
 
-    // Inputs
-    update_player_controller(&player);
+    if (is_key_repeat_f(KEY_LEFT)) {
+      player.transform.rotation.z += speed;
+    }
 
-    // Draw
+    if (is_key_repeat_f(KEY_RIGHT)) {
+      player.transform.rotation.z += -1 * speed;
+    }
+
     begin_drawing_p();
     clear_background_p(DARK_GRAY);
 
-    for (int i = 0; i < 2; i++) { // Update all actors
-      update_actor(actors[i]);
-    }
+    draw_actor(&player);
 
     end_drawing_p();
   }
@@ -149,67 +114,26 @@ struct sprite_f init_sprite(float r, float g, float b, float a) {
   const char *fragment = FIND_ASSET("shader/default_fragment.frag");
 
   sprite.shader_id = load_shader_f(vertex, fragment);
-  sprite.projection = GL.glGetUniformLocation(sprite.shader_id, "proj");
+  sprite.model_id = GL.glGetUniformLocation(sprite.shader_id, "model");
   sprite.myColor_id = GL.glGetUniformLocation(sprite.shader_id, "myColor");
   sprite.vao_id = vao;
+  sprite.transform.scale.x = 1;
+  sprite.transform.scale.y = 1;
+  sprite.transform.scale.z = 1;
   sprite.color[0] = r;
   sprite.color[1] = g;
   sprite.color[2] = b;
   sprite.color[3] = a;
 
-  G_LOG(LOG_INFO, "Init Sprite: Shader:%u, Proj:%u, VAO:%u", sprite.shader_id, sprite.projection, sprite.vao_id);
+  G_LOG(LOG_INFO, "Init Sprite: Shader:%u, Proj:%u, VAO:%u", sprite.shader_id, sprite.model_id, sprite.vao_id);
 
   return sprite;
 }
 
-void update_player_controller(struct actor *actor) {
-  if (is_key_repeat_f(KEY_W)) {
-    actor->transform.position.y += actor->speed;
-  }
-
-  if (is_key_repeat_f(KEY_S)) {
-    actor->transform.position.y -= actor->speed;
-  }
-
-  if (is_key_repeat_f(KEY_A)) {
-    actor->transform.position.x -= actor->speed;
-  }
-  if (is_key_repeat_f(KEY_D)) {
-    actor->transform.position.x += actor->speed;
-  }
-  if (is_key_repeat_f(KEY_R)) {
-    actor->transform.position.z -= actor->speed;
-  }
-  if (is_key_repeat_f(KEY_F)) {
-    actor->transform.position.z += actor->speed;
-  }
-
-  if (is_key_repeat_f(KEY_LEFT)) {
-    actor->transform.rotation.y += -1 * actor->angle;
-  }
-  if (is_key_repeat_f(KEY_RIGHT)) {
-    actor->transform.rotation.y += actor->angle;
-  }
-
-  if (is_key_repeat_f(KEY_UP)) {
-    actor->transform.rotation.x += -1 * actor->angle;
-  }
-  if (is_key_repeat_f(KEY_DOWN)) {
-    actor->transform.rotation.x += actor->angle;
-  }
-
-  if (is_key_repeat_f(KEY_E)) {
-    actor->transform.rotation.z += -1 * actor->angle;
-  }
-  if (is_key_repeat_f(KEY_Q)) {
-    actor->transform.rotation.z += actor->angle;
-  }
-}
-
-void set_actor_transform(struct actor *actor) {
-  struct vector3_f *pos = &actor->transform.position;
-  struct vector3_f *rot = &actor->transform.rotation;
-  struct vector3_f *sca = &actor->transform.scale;
+void draw_actor(struct sprite_f *sprite) {
+  struct vector3_f *pos = &sprite->transform.position;
+  struct vector3_f *rot = &sprite->transform.rotation;
+  struct vector3_f *sca = &sprite->transform.scale;
 
   struct mat4_f m_translation = matrix_init_translation_f(pos->x, pos->y, pos->z);
   struct mat4_f m_rotation = matrix_init_rotation_f(rot->x, rot->y, rot->z);
@@ -219,20 +143,12 @@ void set_actor_transform(struct actor *actor) {
   m_transform = matrix_mult_f(m_rotation, m_scale);
   m_transform = matrix_mult_f(m_translation, m_transform);
 
-  actor->model = matrix_mult_f(perspective, m_transform);
+  m_transform = matrix_mult_f(perspective, m_transform);
 
-  GL.glUniformMatrix4fv(actor->sprite.projection, 1, 0, (const float *)actor->model.e);
-  GL.glUniform4fv(actor->sprite.myColor_id, 1, (const float *)actor->sprite.color);
-}
-
-void update_actor(struct actor *actor) {
-  set_actor_transform(actor);
-  render_sprite(actor);
-}
-
-void render_sprite(struct actor *actor) {
-  GL.glUseProgram(actor->sprite.shader_id);
-  GL.glBindVertexArray(actor->sprite.vao_id);
+  GL.glBindVertexArray(sprite->vao_id);
+  GL.glUniformMatrix4fv(sprite->model_id, 1, GL_FALSE, (const float *)m_transform.e);
+  GL.glUniform4fv(sprite->myColor_id, 1, (const float *)sprite->color);
+  GL.glUseProgram(sprite->shader_id);
   GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
   GL.glBindVertexArray(0);
 }

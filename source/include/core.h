@@ -177,6 +177,7 @@ struct mat4_f {
 
 struct mat4_f matrix_identity_f();
 struct mat4_f matrix_mult_f(struct mat4_f a, struct mat4_f b);
+struct mat4_f matrix_inverse_f(struct mat4_f m);
 struct mat4_f matrix_init_perspective_f(float fov, float aspect, float z_near, float z_far);
 struct mat4_f matrix_init_ortho_f(float left, float right, float top, float bottom, float z_near, float z_far);
 struct mat4_f matrix_init_translation_f(float x, float y, float z);

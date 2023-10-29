@@ -11,6 +11,7 @@ struct transform_f {
   struct vector3_f position;
   struct vector3_f rotation;
   struct vector3_f scale;
+  struct mat4_f model;
 };
 
 struct sprite_f {
@@ -22,10 +23,23 @@ struct sprite_f {
   float color[4];
 };
 
+struct camera_f {
+  struct transform_f transform;
+  struct mat4_f proj;
+  struct mat4_f view;
+  float fov;
+  float aspect;
+  float z_near;
+  float z_far;
+};
+
+struct camera_f init_camera(float fov, float aspect, float z_near, float z_far);
+void update_camera(struct camera_f *camera);
 struct sprite_f init_sprite(float r, float g, float b, float a);
 void draw_actor(struct sprite_f *actor);
 
-struct mat4_f perspective = {0};
+struct camera_f main_camera = {0};
+shader_f default_shader = 0;
 
 // Test
 
@@ -41,12 +55,17 @@ int main(int argc, char *argv[]) {
 
   init_window_p(width, height, "Brick-Basher");
 
-  // Initialize Player
-  float speed = 1.f;
-  struct sprite_f player = init_sprite(YELLOW);
+  // Load Defult Shader
+  const char *vertex = FIND_ASSET("shader/default_vertex.vert");
+  const char *fragment = FIND_ASSET("shader/default_fragment.frag");
+  default_shader = load_shader_f(vertex, fragment);
 
   // Initialize Perspective
-  perspective = matrix_init_perspective_f(1.f, ((float)width / height), 0.f, 2.f);
+  main_camera = init_camera(1.f, ((float)width / height), 0.f, 2.f);
+
+  // Initialize Player
+  float speed = 0.05f;
+  struct sprite_f player = init_sprite(YELLOW);
 
   while (!window_should_close_p()) {
     // Update
@@ -60,16 +79,25 @@ int main(int argc, char *argv[]) {
       break;
     }
 
-    if (is_key_repeat_f(KEY_LEFT)) {
-      player.transform.rotation.z += speed;
+    if (is_key_repeat_f(KEY_S)) {
+      main_camera.transform.position.z += speed;
     }
 
-    if (is_key_repeat_f(KEY_RIGHT)) {
-      player.transform.rotation.z += -1 * speed;
+    if (is_key_repeat_f(KEY_W)) {
+      main_camera.transform.position.z += -1 * speed;
+    }
+
+    if (is_key_repeat_f(KEY_D)) {
+      main_camera.transform.position.x += speed;
+    }
+
+    if (is_key_repeat_f(KEY_A)) {
+      main_camera.transform.position.x += -1 * speed;
     }
 
     begin_drawing_p();
     clear_background_p(DARK_GRAY);
+    update_camera(&main_camera);
 
     draw_actor(&player);
 
@@ -79,6 +107,43 @@ int main(int argc, char *argv[]) {
   close_window_p();
 
   return 0;
+}
+
+struct camera_f init_camera(float fov, float aspect, float z_near, float z_far) {
+  struct camera_f camera = {0};
+  camera.fov = fov;
+  camera.aspect = aspect;
+  camera.z_near = z_near;
+  camera.z_far = z_far;
+  camera.proj = matrix_init_perspective_f(camera.fov, camera.aspect, camera.z_near, camera.z_far);
+
+  camera.transform.scale.x = 1.f;
+  camera.transform.scale.y = 1.f;
+  camera.transform.scale.z = 1.f;
+
+  return camera;
+}
+
+void update_camera(struct camera_f *camera) {
+  int x, y;
+  get_window_size_p(&x, &y);
+  camera->proj = matrix_init_perspective_f(camera->fov, camera->aspect, camera->z_near, camera->z_far);
+
+  unsigned int proj_id = GL.glGetUniformLocation(default_shader, "proj");
+  unsigned int view_id = GL.glGetUniformLocation(default_shader, "view");
+  unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
+
+  struct vector3_f *cam_pos = &camera->transform.position;
+
+  struct mat4_f m_trans = matrix_init_translation_f(cam_pos->x, cam_pos->y, cam_pos->z);
+  struct mat4_f m_view = matrix_inverse_f(m_trans);
+
+  camera->transform.model = m_trans;
+  camera->view = m_view;
+
+  GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)camera->proj.e);
+  GL.glUniformMatrix4fv(view_id, 1, GL_FALSE, (const float *)camera->view.e);
+  GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)matrix_identity_f().e);
 }
 
 struct sprite_f init_sprite(float r, float g, float b, float a) {
@@ -110,10 +175,7 @@ struct sprite_f init_sprite(float r, float g, float b, float a) {
   GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
   GL.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(index), index, GL_STATIC_DRAW);
 
-  const char *vertex = FIND_ASSET("shader/default_vertex.vert");
-  const char *fragment = FIND_ASSET("shader/default_fragment.frag");
-
-  sprite.shader_id = load_shader_f(vertex, fragment);
+  sprite.shader_id = default_shader;
   sprite.model_id = GL.glGetUniformLocation(sprite.shader_id, "model");
   sprite.myColor_id = GL.glGetUniformLocation(sprite.shader_id, "myColor");
   sprite.vao_id = vao;
@@ -143,11 +205,16 @@ void draw_actor(struct sprite_f *sprite) {
   m_transform = matrix_mult_f(m_rotation, m_scale);
   m_transform = matrix_mult_f(m_translation, m_transform);
 
-  m_transform = matrix_mult_f(perspective, m_transform);
+  m_transform = matrix_mult_f(main_camera.view, m_transform);
 
   GL.glBindVertexArray(sprite->vao_id);
-  GL.glUniformMatrix4fv(sprite->model_id, 1, GL_FALSE, (const float *)m_transform.e);
-  GL.glUniform4fv(sprite->myColor_id, 1, (const float *)sprite->color);
+
+  unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
+  unsigned int color_id = GL.glGetUniformLocation(default_shader, "myColor");
+
+  GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)m_transform.e);
+  GL.glUniform4fv(color_id, 1, (const float *)sprite->color);
+
   GL.glUseProgram(sprite->shader_id);
   GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
   GL.glBindVertexArray(0);

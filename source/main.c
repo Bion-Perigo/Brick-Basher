@@ -1,3 +1,4 @@
+#include "GL/glcorearb.h"
 #include "core.h"
 
 // Test
@@ -25,6 +26,8 @@ struct sprite_f {
 
 struct camera_f {
   struct transform_f transform;
+  unsigned int proj_id;
+  unsigned int view_id;
   struct mat4_f proj;
   struct mat4_f view;
   float fov;
@@ -116,6 +119,8 @@ struct camera_f init_camera(float fov, float aspect, float z_near, float z_far) 
   camera.z_near = z_near;
   camera.z_far = z_far;
   camera.proj = matrix_init_perspective_f(camera.fov, camera.aspect, camera.z_near, camera.z_far);
+  camera.proj_id = GL.glGetUniformLocation(default_shader, "proj");
+  camera.view_id = GL.glGetUniformLocation(default_shader, "view");
 
   camera.transform.scale.x = 1.f;
   camera.transform.scale.y = 1.f;
@@ -125,25 +130,21 @@ struct camera_f init_camera(float fov, float aspect, float z_near, float z_far) 
 }
 
 void update_camera(struct camera_f *camera) {
-  int x, y;
-  get_window_size_p(&x, &y);
+  int viewport[4] = {0};
+  GL.glGetIntegerv(GL_VIEWPORT, viewport);
+  camera->aspect = (float)viewport[2] / viewport[3];
   camera->proj = matrix_init_perspective_f(camera->fov, camera->aspect, camera->z_near, camera->z_far);
-
-  unsigned int proj_id = GL.glGetUniformLocation(default_shader, "proj");
-  unsigned int view_id = GL.glGetUniformLocation(default_shader, "view");
-  unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
 
   struct vector3_f *cam_pos = &camera->transform.position;
 
-  struct mat4_f m_trans = matrix_init_translation_f(cam_pos->x, cam_pos->y, cam_pos->z);
-  struct mat4_f m_view = matrix_inverse_f(m_trans);
+  struct mat4_f m_transform = matrix_init_translation_f(cam_pos->x, cam_pos->y, cam_pos->z);
+  struct mat4_f m_view = matrix_inverse_f(m_transform);
 
-  camera->transform.model = m_trans;
+  camera->transform.model = m_transform;
   camera->view = m_view;
 
-  GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)camera->proj.e);
-  GL.glUniformMatrix4fv(view_id, 1, GL_FALSE, (const float *)camera->view.e);
-  GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)matrix_identity_f().e);
+  GL.glUniformMatrix4fv(camera->proj_id, 1, GL_FALSE, (const float *)camera->proj.e);
+  GL.glUniformMatrix4fv(camera->view_id, 1, GL_FALSE, (const float *)camera->view.e);
 }
 
 struct sprite_f init_sprite(struct color_f color) {
@@ -187,7 +188,7 @@ struct sprite_f init_sprite(struct color_f color) {
   sprite.color.b = color.b;
   sprite.color.a = color.a;
 
-  G_LOG(LOG_INFO, "Init Sprite: Shader:%u, Proj:%u, VAO:%u", sprite.shader_id, sprite.model_id, sprite.vao_id);
+  G_LOG(LOG_INFO, "Init Sprite: Shader:%u, Model:%u, VAO:%u", sprite.shader_id, sprite.model_id, sprite.vao_id);
 
   return sprite;
 }
@@ -209,11 +210,8 @@ void draw_actor(struct sprite_f *sprite) {
 
   GL.glBindVertexArray(sprite->vao_id);
 
-  unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
-  unsigned int color_id = GL.glGetUniformLocation(default_shader, "myColor");
-
-  GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)m_transform.e);
-  GL.glUniform4fv(color_id, 1, (const float *)&sprite->color);
+  GL.glUniformMatrix4fv(sprite->model_id, 1, GL_FALSE, (const float *)m_transform.e);
+  GL.glUniform4fv(sprite->myColor_id, 1, (const float *)&sprite->color);
 
   GL.glUseProgram(sprite->shader_id);
   GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);

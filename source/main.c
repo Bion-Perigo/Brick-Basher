@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     // Update
     if (is_key_pressed_f(KEY_TAB)) {
       G_LOG(LOG_INFO, "Toggle Fullscreen");
-      set_window_fullscren_p();
+      set_window_fullscreen_p();
     }
 
     if (is_key_pressed_f(KEY_ESCAPE)) {

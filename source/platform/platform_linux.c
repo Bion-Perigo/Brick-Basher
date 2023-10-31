@@ -95,7 +95,7 @@ bool window_should_close_p() {
   return CALL_API(win_api.on_window_should_close, true);
 }
 
-void set_window_fullscren_p() {
+void set_window_fullscreen_p() {
   CALL_API(win_api.on_set_window_fullscreen, 0);
 }
 

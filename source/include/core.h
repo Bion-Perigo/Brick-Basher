@@ -251,7 +251,7 @@ struct window_p *init_window_p(int width, int height, const char *title);
 void close_window_p();
 void update_window_p();
 bool window_should_close_p();
-void set_window_fullscren_p();
+void set_window_fullscreen_p();
 void get_window_size_p(int *width, int *height);
 int get_window_width_p();
 int get_window_height_p();

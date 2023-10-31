@@ -152,22 +152,76 @@ enum keybord_p {
   KEY_MAX
 };
 
+struct color_f {
+  float r;
+  float g;
+  float b;
+  float a;
+};
+
+#define CLITERAL(type) (type)
+
 // Basic Colors     -R----G----B----A-
-#define BLANK       0.f, 0.f, 0.f, 0.f
-#define WHITE       1.f, 1.f, 1.f, 1.f
-#define BLACK       0.f, 0.f, 0.f, 1.f
-#define RED         1.f, 0.f, 0.f, 1.f
-#define GREEN       0.f, 1.f, 0.f, 1.f
-#define BLUE        0.f, 0.f, 1.f, 1.f
-#define YELLOW      1.f, 1.f, 0.f, 1.f
-#define VIOLET      1.f, 0.f, 1.f, 1.f
-#define CYAN        0.f, 1.f, 1.f, 1.f
-#define BROWN       0.65f, 0.16f, 0.16f, 1.f
-#define GRAY        0.75f, 0.75f, 0.75f, 1.f
-#define SKY_BLUE    0.20f, 0.6f, 0.8f, 1.f
-#define DARK_BROWN  0.36f, 0.25f, 0.20f, 1.f
-#define DARK_GRAY   0.45f, 0.45f, 0.45f, 1.f
-#define DARK_PURPLE 0.53f, 0.12f, 0.47f, 1.f
+#define BLANK                \
+  CLITERAL(struct color_f) { \
+    0.f, 0.f, 0.f, 0.f       \
+  }
+#define WHITE                \
+  CLITERAL(struct color_f) { \
+    1.f, 1.f, 1.f, 1.f       \
+  }
+#define BLACK                \
+  CLITERAL(struct color_f) { \
+    0.f, 0.f, 0.f, 1.f       \
+  }
+#define RED                  \
+  CLITERAL(struct color_f) { \
+    1.f, 0.f, 0.f, 1.f       \
+  }
+#define GREEN                \
+  CLITERAL(struct color_f) { \
+    0.f, 1.f, 0.f, 1.f       \
+  }
+#define BLUE                 \
+  CLITERAL(struct color_f) { \
+    0.f, 0.f, 1.f, 1.f       \
+  }
+#define YELLOW               \
+  CLITERAL(struct color_f) { \
+    1.f, 1.f, 0.f, 1.f       \
+  }
+#define VIOLET               \
+  CLITERAL(struct color_f) { \
+    1.f, 0.f, 1.f, 1.f       \
+  }
+#define CYAN                 \
+  CLITERAL(struct color_f) { \
+    0.f, 1.f, 1.f, 1.f       \
+  }
+#define BROWN                \
+  CLITERAL(struct color_f) { \
+    0.65f, 0.16f, 0.16f, 1.f \
+  }
+#define GRAY                 \
+  CLITERAL(struct color_f) { \
+    0.75f, 0.75f, 0.75f, 1.f \
+  }
+#define SKY_BLUE             \
+  CLITERAL(struct color_f) { \
+    0.20f, 0.6f, 0.8f, 1.f   \
+  }
+#define DARK_BROWN           \
+  CLITERAL(struct color_f) { \
+    0.36f, 0.25f, 0.20f, 1.f \
+  }
+#define DARK_GRAY            \
+  CLITERAL(struct color_f) { \
+    0.45f, 0.45f, 0.45f, 1.f \
+  }
+#define DARK_PURPLE          \
+  CLITERAL(struct color_f) { \
+    0.53f, 0.12f, 0.47f, 1.f \
+  }
 
 /*==================== Game Framework ====================*/
 
@@ -203,7 +257,7 @@ int get_window_width_p();
 int get_window_height_p();
 
 // Graphic
-void clear_background_p(float r, float g, float b, float a);
+void clear_background_p(struct color_f color);
 void begin_drawing_p();
 void end_drawing_p();
 

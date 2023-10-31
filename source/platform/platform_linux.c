@@ -99,8 +99,8 @@ void set_window_fullscren_p() {
   CALL_API(win_api.on_set_window_fullscreen, 0);
 }
 
-void clear_background_p(float r, float g, float b, float a) {
-  GL.glClearColor(r, g, b, a);
+void clear_background_p(struct color_f color) {
+  GL.glClearColor(color.r, color.g, color.b, color.a);
   GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   int width = 0, height = 0;
   get_window_size_p(&width, &height);

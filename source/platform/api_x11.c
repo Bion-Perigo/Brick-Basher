@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #ifdef PLATFORM_LINUX
 #include "EGL/egl.h"
 #include "EGL/eglplatform.h"
@@ -60,17 +61,8 @@ static struct x11_api {
       Display *, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
 } x11_api;
 
-static struct window_p {
-  int width;
-  int height;
-  const char *title;
-  int screen;
-  bool should_close;
-  bool fullscreen;
-
-  NativeDisplayType display;
-  NativeWindowType window;
-
+static struct x11_window {
+  struct window_p *window;
   Atom wm_protocols;
   Atom wm_delete_window;
 } x11_window;
@@ -83,7 +75,6 @@ void api_x11_update_window();
 void api_x11_close_window();
 bool api_x11_window_should_close();
 void api_x11_set_window_fullscreen();
-void api_x11_get_window_size(int *width, int *height);
 void api_x11_update_keybord(int key_code, bool is_pressed);
 
 /*==================== Definition ====================*/
@@ -95,57 +86,61 @@ bool api_x11_init(struct window_api_p *win_api) {
   }
 
   get_functions_p(lib_x11, &x11_api, x11_names);
-  x11_window.should_close = true;
 
+  x11_window.window = NULL;
   win_api->on_create_window = &api_x11_create_window;
   win_api->on_update_window = &api_x11_update_window;
   win_api->on_close_window = &api_x11_close_window;
-  win_api->on_window_should_close = &api_x11_window_should_close;
   win_api->on_set_window_fullscreen = &api_x11_set_window_fullscreen;
-  win_api->on_get_window_size = &api_x11_get_window_size;
 
   return true;
 }
 
 struct window_p *api_x11_create_window(int width, int height, const char *title) {
-  if (x11_window.should_close == false) {
-    return &x11_window;
-  }
+  struct window_p *win = (struct window_p *)get_memory_f(sizeof(struct window_p));
 
   long mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask;
 
-  x11_window.display = x11_api.XOpenDisplay(NULL);
-  x11_window.screen = DefaultScreen(x11_window.display);
-  x11_window.window = x11_api.XCreateSimpleWindow(
-      x11_window.display, DefaultRootWindow(x11_window.display), 0, 0, width, height, 1,
-      BlackPixel(x11_window.display, x11_window.screen), WhitePixel(x11_window.display, x11_window.screen));
+  win->should_close = false;
+  win->fullscreen = false;
+  win->display = x11_api.XOpenDisplay(NULL);
+  win->screen = DefaultScreen(win->display);
+  win->window = x11_api.XCreateSimpleWindow(
+      win->display, DefaultRootWindow(win->display), 0, 0, width, height, 1,
+      BlackPixel(win->display, win->screen), WhitePixel(win->display, win->screen));
 
-  x11_api.XMapWindow(x11_window.display, x11_window.window);
-  x11_api.XSelectInput(x11_window.display, x11_window.window, mask);
-  x11_api.XStoreName(x11_window.display, x11_window.window, title);
-  x11_api.XkbSetDetectableAutoRepeat(x11_window.display, true, NULL);
+  x11_api.XMapWindow(win->display, win->window);
+  x11_api.XSelectInput(win->display, win->window, mask);
+  x11_api.XStoreName(win->display, win->window, title);
+  x11_api.XkbSetDetectableAutoRepeat(win->display, true, NULL);
 
-  x11_window.wm_protocols = x11_api.XInternAtom(x11_window.display, "WM_PROTOCOLS", false);
-  x11_window.wm_delete_window = x11_api.XInternAtom(x11_window.display, "WM_DELETE_WINDOW", false);
+  if (x11_window.window == NULL) {
+    x11_window.wm_protocols = x11_api.XInternAtom(win->display, "WM_PROTOCOLS", false);
+    x11_window.wm_delete_window = x11_api.XInternAtom(win->display, "WM_DELETE_WINDOW", false);
+  }
 
-  x11_api.XSetWMProtocols(x11_window.display, x11_window.window, &x11_window.wm_delete_window, true);
+  x11_api.XSetWMProtocols(win->display, win->window, &x11_window.wm_delete_window, true);
 
-  x11_window.width = width;
-  x11_window.height = height;
-  x11_window.title = title;
-  x11_window.should_close = false;
-  G_LOG(LOG_INFO, "Init Window: Width:%d Height:%d Title:%s", width, height, title);
-  platform_linux_set_window_info(x11_window.display, x11_window.window);
+  win->width = width;
+  win->height = height;
+  win->title = title;
+  win->should_close = false;
+  if (x11_window.window == NULL) {
+    x11_window.window = win;
+    G_LOG(LOG_INFO, "Init Window: Width:%d Height:%d Title:%s", width, height, title);
+  } else {
+    G_LOG(LOG_INFO, "New unmanaged window created: Width:%d Height:%d Title:%s", width, height, title);
+  }
 
-  return &x11_window;
+  return win;
 }
 
 void api_x11_update_window() {
   XEvent event;
   copy_memory_f(previous_keys, current_keys, sizeof(char) * KEY_MAX);
 
-  while (x11_api.XPending(x11_window.display)) {
-    x11_api.XNextEvent(x11_window.display, &event);
+  while (x11_api.XPending(x11_window.window->display)) {
+    x11_api.XNextEvent(x11_window.window->display, &event);
 
     switch (event.type) {
     case KeyPress: {
@@ -163,14 +158,13 @@ void api_x11_update_window() {
       G_LOG(LOG_WARNING, "ButtonRelease:%d", event.xbutton.button);
     } break;
     case ConfigureNotify: {
-      x11_window.width = event.xconfigurerequest.width;
-      x11_window.height = event.xconfigurerequest.height;
-      G_LOG(LOG_WARNING, "Window Size:%d x %d", x11_window.width, x11_window.height);
+      x11_window.window->width = event.xconfigurerequest.width;
+      x11_window.window->height = event.xconfigurerequest.height;
     } break;
     case ClientMessage: {
       if (event.xclient.message_type == x11_window.wm_protocols) {
         if (event.xclient.data.l[0] == (long)x11_window.wm_delete_window) {
-          x11_window.should_close = true;
+          x11_window.window->should_close = true;
         }
       }
     } break;
@@ -179,35 +173,27 @@ void api_x11_update_window() {
 }
 
 void api_x11_close_window() {
-  x11_api.XUnmapWindow(x11_window.display, x11_window.window);
-  x11_api.XDestroyWindow(x11_window.display, x11_window.window);
-  x11_api.XCloseDisplay(x11_window.display);
-}
-
-bool api_x11_window_should_close() {
-  return x11_window.should_close;
+  x11_api.XUnmapWindow(x11_window.window->display, x11_window.window->window);
+  x11_api.XDestroyWindow(x11_window.window->display, x11_window.window->window);
+  x11_api.XCloseDisplay(x11_window.window->display);
 }
 
 void api_x11_set_window_fullscreen() {
   XEvent event;
-  x11_window.fullscreen = !x11_window.fullscreen;
-  Atom wm_state = x11_api.XInternAtom(x11_window.display, "_NET_WM_STATE", false);
-  Atom wm_fullscreen = x11_api.XInternAtom(x11_window.display, "_NET_WM_STATE_FULLSCREEN", false);
+  x11_window.window->fullscreen = !x11_window.window->fullscreen;
+  Atom wm_state = x11_api.XInternAtom(x11_window.window->display, "_NET_WM_STATE", false);
+  Atom wm_fullscreen = x11_api.XInternAtom(x11_window.window->display, "_NET_WM_STATE_FULLSCREEN", false);
   memset(&event, 0, 1);
   event.type = ClientMessage;
-  event.xclient.window = x11_window.window;
+  event.xclient.window = x11_window.window->window;
   event.xclient.message_type = wm_state;
   event.xclient.format = 32;
-  event.xclient.data.l[0] = x11_window.fullscreen;
+  event.xclient.data.l[0] = x11_window.window->fullscreen;
   event.xclient.data.l[1] = wm_fullscreen;
   event.xclient.data.l[2] = 0;
   x11_api.XSendEvent(
-      x11_window.display, DefaultRootWindow(x11_window.display), false, StructureNotifyMask, &event);
-}
-
-void api_x11_get_window_size(int *width, int *height) {
-  *width = x11_window.width;
-  *height = x11_window.height;
+      x11_window.window->display, DefaultRootWindow(x11_window.window->display), false, StructureNotifyMask,
+      &event);
 }
 
 void api_x11_update_keybord(int key_code, bool is_pressed) {

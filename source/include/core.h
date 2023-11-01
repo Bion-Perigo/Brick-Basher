@@ -1,4 +1,5 @@
 #pragma once
+#include "EGL/egl.h"
 #include "GL/gl_api.h"
 
 #include <math.h>
@@ -17,16 +18,25 @@
 
 /*==================== Game Platform ====================*/
 
-struct window_p;
+struct window_p {
+  int width;
+  int height;
+  const char *title;
+  int screen;
+  bool should_close;
+  bool fullscreen;
+
+  NativeDisplayType display;
+  NativeWindowType window;
+};
+
 typedef unsigned int shader_f;
 
 struct window_api_p {
   struct window_p *(*on_create_window)(int width, int height, const char *title);
   void (*on_update_window)();
   void (*on_close_window)();
-  bool (*on_window_should_close)();
   void (*on_set_window_fullscreen)();
-  void (*on_get_window_size)(int *width, int *height);
 };
 
 // enum
@@ -152,6 +162,9 @@ enum keybord_p {
   KEY_MAX
 };
 
+/*==================== Game Framework ====================*/
+
+// Basic Colors
 struct color_f {
   float r;
   float g;
@@ -161,7 +174,6 @@ struct color_f {
 
 #define CLITERAL(type) (type)
 
-// Basic Colors     -R----G----B----A-
 #define BLANK                \
   CLITERAL(struct color_f) { \
     0.f, 0.f, 0.f, 0.f       \
@@ -223,20 +235,10 @@ struct color_f {
     0.53f, 0.12f, 0.47f, 1.f \
   }
 
-/*==================== Game Framework ====================*/
-
+// Matrix
 struct mat4_f {
   float e[4][4];
 };
-
-struct mat4_f matrix_identity_f();
-struct mat4_f matrix_mult_f(struct mat4_f a, struct mat4_f b);
-struct mat4_f matrix_inverse_f(struct mat4_f m);
-struct mat4_f matrix_init_perspective_f(float fov, float aspect, float z_near, float z_far);
-struct mat4_f matrix_init_ortho_f(float left, float right, float top, float bottom, float z_near, float z_far);
-struct mat4_f matrix_init_translation_f(float x, float y, float z);
-struct mat4_f matrix_init_rotation_f(float x, float y, float z);
-struct mat4_f matrix_init_scale_f(float x, float y, float z);
 
 /*====================* Game Functions *====================*/
 
@@ -257,6 +259,7 @@ int get_window_width_p();
 int get_window_height_p();
 
 // Graphic
+bool init_opengl_p(int major, int minor, int color_bits, int depth_bits);
 void clear_background_p(struct color_f color);
 void begin_drawing_p();
 void end_drawing_p();
@@ -270,7 +273,7 @@ void get_functions_p(void *library, void *api, const char **names);
 // Log
 void create_log_p(enum log_level_p level, const char *context, const char *format, ...);
 
-/*==================== Game Frameworld ====================*/
+/*==================== Game Framework ====================*/
 
 // Input Manager
 bool is_key_pressed_f(int key_code);
@@ -283,6 +286,16 @@ char *resized_memory_f(char *data, size_t new_size);
 char *copy_memory_f(char *destiny, char *source, size_t copy_size);
 bool free_memory_f(char *data);
 shader_f load_shader_f(const char *vertex_path, const char *fragment_path);
+
+// Matrix
+struct mat4_f matrix_identity_f();
+struct mat4_f matrix_mult_f(struct mat4_f a, struct mat4_f b);
+struct mat4_f matrix_inverse_f(struct mat4_f m);
+struct mat4_f matrix_init_perspective_f(float fov, float aspect, float z_near, float z_far);
+struct mat4_f matrix_init_ortho_f(float left, float right, float top, float bottom, float z_near, float z_far);
+struct mat4_f matrix_init_translation_f(float x, float y, float z);
+struct mat4_f matrix_init_rotation_f(float x, float y, float z);
+struct mat4_f matrix_init_scale_f(float x, float y, float z);
 
 #ifdef __cplusplus
 }

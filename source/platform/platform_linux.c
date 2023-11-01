@@ -1,16 +1,13 @@
-#include "GL/glcorearb.h"
-
-#include <stdbool.h>
 #ifdef PLATFORM_LINUX
 #include "EGL/egl.h"
 #include "EGL/eglplatform.h"
 #include "GL/gl_api.h"
+#include "GL/glcorearb.h"
 #include "core.h"
 
-#include <X11/X.h>
-#include <X11/Xlib.h>
 #include <dlfcn.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -48,33 +45,31 @@ static struct egle_api {
 } egle_api;
 
 static struct egl_info {
-  NativeDisplayType win_display;
-  NativeWindowType win_window;
   EGLDisplay *display;
   EGLConfig config;
   EGLSurface *surface;
   EGLContext *context;
 } egl_info;
 
-/*==================== Declaration ====================*/
+static struct window_p *main_window;
 
-// The window API layer will be called
-void platform_linux_set_window_info(EGLNativeDisplayType dpy, EGLNativeWindowType win);
+/*==================== Declaration ====================*/
 
 bool init_egle_api(int major, int minor, int color_bits, int depth_bits);
 
 /*==================== Definition ====================*/
 
+// Window =========================================
+
 struct window_p *init_window_p(int width, int height, const char *title) {
-  struct window_p *window = NULL;
 
   if (api_x11_init(&win_api)) {
     G_LOG(LOG_INFO, "API X11 Initialized");
-    window = CALL_API(win_api.on_create_window, NULL, width, height, title);
-    if (!init_egle_api(3, 3, 8, 24)) {
+    main_window = CALL_API(win_api.on_create_window, NULL, width, height, title);
+    if (!init_opengl_p(3, 3, 8, 8)) {
       G_LOG(LOG_FATAL, "EGL not Initialized");
     }
-    return window;
+    return main_window;
   }
 
   G_LOG(LOG_FATAL, "No window API loaded");
@@ -92,35 +87,117 @@ void update_window_p() {
 }
 
 bool window_should_close_p() {
-  return CALL_API(win_api.on_window_should_close, true);
+  return main_window->should_close;
 }
 
 void set_window_fullscreen_p() {
   CALL_API(win_api.on_set_window_fullscreen, 0);
 }
 
-void clear_background_p(struct color_f color) {
-  GL.glClearColor(color.r, color.g, color.b, color.a);
-  GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  int width = 0, height = 0;
-  get_window_size_p(&width, &height);
-  GL.glViewport(0, 0, width, height);
-}
-
 void get_window_size_p(int *width, int *height) {
-  CALL_API(win_api.on_get_window_size, 0, width, height);
+  *width = main_window->width;
+  *height = main_window->height;
 }
 
 int get_window_width_p() {
-  int width = 0, height = 0;
-  CALL_API(win_api.on_get_window_size, 0, &width, &height);
-  return width;
+  return main_window->width;
 }
 
 int get_window_height_p() {
-  int width = 0, height = 0;
-  CALL_API(win_api.on_get_window_size, 0, &width, &height);
-  return height;
+  return main_window->height;
+}
+
+// Graphic =========================================
+
+bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
+  lib_egl = load_library_p("libEGL.so");
+  if (lib_egl == NULL) {
+    G_LOG(LOG_FATAL, "Lib EGL not loaded");
+    return false;
+  }
+
+  get_functions_p(lib_egl, &egle_api, egle_names);
+
+  int egl_major, egl_minor;
+
+  egl_info.display = egle_api.eglGetDisplay(main_window->display);
+
+  if (!egle_api.eglInitialize(egl_info.display, &egl_major, &egl_minor)) {
+    G_LOG(LOG_FATAL, "Init EGL: Not Initialize");
+    return false;
+  }
+
+  if (!egle_api.eglBindAPI(EGL_OPENGL_API)) {
+    G_LOG(LOG_FATAL, "Int EGL: Not bind to OpenGL");
+    return false;
+  }
+
+  EGLint attributes_list[] = {
+      EGL_RENDERABLE_TYPE, //
+      EGL_OPENGL_BIT,      //
+      EGL_RED_SIZE,        //
+      color_bits,          //
+      EGL_GREEN_SIZE,      //
+      color_bits,          //
+      EGL_BLUE_SIZE,       //
+      color_bits,          //
+      EGL_DEPTH_SIZE,      //
+      depth_bits,          //
+      EGL_STENCIL_SIZE,    //
+      color_bits,          //
+      EGL_NONE             //
+  };
+
+  EGLint count;
+  if (!egle_api.eglChooseConfig(egl_info.display, attributes_list, &egl_info.config, true, &count) ||
+      count != 1) {
+    G_LOG(LOG_FATAL, "Init EGL: Not choose config");
+    return false;
+  }
+  egl_info.surface =
+      egle_api.eglCreateWindowSurface(egl_info.display, egl_info.config, main_window->window, NULL);
+  if (egl_info.surface == EGL_NO_SURFACE) {
+    G_LOG(LOG_FATAL, "Init EGL: Not create window surface");
+    return false;
+  }
+
+  EGLint context_attribs[] = {
+      EGL_CONTEXT_MAJOR_VERSION,           //
+      major,                               //
+      EGL_CONTEXT_MINOR_VERSION,           //
+      minor,                               //
+      EGL_CONTEXT_OPENGL_PROFILE_MASK,     //
+      EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT, //
+#ifdef DEBUG_MODE
+      EGL_CONTEXT_OPENGL_DEBUG, //
+      EGL_TRUE,
+#endif
+      EGL_NONE //
+  };
+
+  egl_info.context =
+      egle_api.eglCreateContext(egl_info.display, egl_info.config, EGL_NO_CONTEXT, context_attribs);
+  if (egl_info.context == EGL_NO_CONTEXT) {
+    G_LOG(LOG_FATAL, "Init EGL: Not create context");
+    return false;
+  }
+
+  if (!egle_api.eglMakeCurrent(egl_info.display, egl_info.surface, egl_info.surface, egl_info.context)) {
+    G_LOG(LOG_FATAL, "Init EGL: Not make current");
+    return false;
+  }
+
+  G_LOG(LOG_INFO, "API EGL Initialized => EGL:%d.%d - OpenGL:%d.%d", egl_major, egl_minor, major, minor);
+
+  api_gl_init("libGL.so");
+
+  return true;
+}
+void clear_background_p(struct color_f color) {
+  GL.glEnable(GL_DEPTH_TEST);
+  GL.glClearColor(color.r, color.g, color.b, color.a);
+  GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  GL.glViewport(0, 0, main_window->width, main_window->height);
 }
 
 void begin_drawing_p() {
@@ -130,6 +207,9 @@ void begin_drawing_p() {
 void end_drawing_p() {
   egle_api.eglSwapBuffers(egl_info.display, egl_info.surface);
 }
+
+// Library =========================================
+
 void *load_library_p(const char *library_name) {
   if (library_name == NULL) {
     G_LOG(LOG_INFO, "Load Library: Received NULL");
@@ -178,12 +258,13 @@ void get_functions_p(void *library, void *api, const char **names) {
     if (function != NULL) {
       void *address = (void *)object + (index * sizeof(char *));
       copy_memory_f((void *)address, (char *)&function, sizeof(char *));
-      // G_LOG(LOG_INFO, "Get Function:%s", *func_name);
     }
     func_name++;
     index++;
   }
 }
+
+// Library =========================================
 
 void create_log_p(enum log_level_p level, const char *context, const char *format, ...) {
   char buffer_log[BUFFER_LOG];
@@ -220,95 +301,4 @@ void create_log_p(enum log_level_p level, const char *context, const char *forma
   va_end(args);
 }
 
-// Isolated Functions
-
-void platform_linux_set_window_info(EGLNativeDisplayType dpy, EGLNativeWindowType win) {
-  egl_info.win_display = dpy;
-  egl_info.win_window = win;
-}
-
-bool init_egle_api(int major, int minor, int color_bits, int depth_bits) {
-  lib_egl = load_library_p("libEGL.so");
-  if (lib_egl == NULL) {
-    G_LOG(LOG_FATAL, "Lib EGL not loaded");
-    return false;
-  }
-
-  get_functions_p(lib_egl, &egle_api, egle_names);
-
-  int egl_major, egl_minor;
-
-  egl_info.display = egle_api.eglGetDisplay(egl_info.win_display);
-
-  if (!egle_api.eglInitialize(egl_info.display, &egl_major, &egl_minor)) {
-    G_LOG(LOG_FATAL, "Init EGL: Not Initialize");
-    return false;
-  }
-
-  if (!egle_api.eglBindAPI(EGL_OPENGL_API)) {
-    G_LOG(LOG_FATAL, "Int EGL: Not bind to OpenGL");
-    return false;
-  }
-
-  EGLint attributes_list[] = {
-      EGL_RENDERABLE_TYPE, //
-      EGL_OPENGL_BIT,      //
-      EGL_RED_SIZE,        //
-      color_bits,          //
-      EGL_GREEN_SIZE,      //
-      color_bits,          //
-      EGL_BLUE_SIZE,       //
-      color_bits,          //
-      EGL_DEPTH_SIZE,      //
-      depth_bits,          //
-      EGL_STENCIL_SIZE,    //
-      color_bits,          //
-      EGL_NONE             //
-  };
-
-  EGLint count;
-  if (!egle_api.eglChooseConfig(egl_info.display, attributes_list, &egl_info.config, true, &count) ||
-      count != 1) {
-    G_LOG(LOG_FATAL, "Init EGL: Not choose config");
-    return false;
-  }
-  egl_info.surface =
-      egle_api.eglCreateWindowSurface(egl_info.display, egl_info.config, egl_info.win_window, NULL);
-  if (egl_info.surface == EGL_NO_SURFACE) {
-    G_LOG(LOG_FATAL, "Init EGL: Not create window surface");
-    return false;
-  }
-
-  EGLint context_attribs[] = {
-      EGL_CONTEXT_MAJOR_VERSION,           //
-      major,                               //
-      EGL_CONTEXT_MINOR_VERSION,           //
-      minor,                               //
-      EGL_CONTEXT_OPENGL_PROFILE_MASK,     //
-      EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT, //
-#ifdef DEBUG_MODE
-      EGL_CONTEXT_OPENGL_DEBUG, //
-      EGL_TRUE,
-#endif
-      EGL_NONE //
-  };
-
-  egl_info.context =
-      egle_api.eglCreateContext(egl_info.display, egl_info.config, EGL_NO_CONTEXT, context_attribs);
-  if (egl_info.context == EGL_NO_CONTEXT) {
-    G_LOG(LOG_FATAL, "Init EGL: Not create context");
-    return false;
-  }
-
-  if (!egle_api.eglMakeCurrent(egl_info.display, egl_info.surface, egl_info.surface, egl_info.context)) {
-    G_LOG(LOG_FATAL, "Init EGL: Not make current");
-    return false;
-  }
-
-  G_LOG(LOG_INFO, "EGL Initialized => EGL:%d.%d - OpenGL:%d.%d", egl_major, egl_minor, major, minor);
-
-  api_gl_init("libGL.so");
-
-  return true;
-}
 #endif // PLATFORM_LINUX

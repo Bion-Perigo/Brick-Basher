@@ -27,6 +27,7 @@ static const char *x11_names[] = {
     "XkbSetDetectableAutoRepeat", //
     "XInternAtom",                //
     "XSetWMProtocols",            //
+    "XSetWMNormalHints",          //
     "XStoreName",                 //
     "XOpenDisplay",               //
     "XCloseDisplay",              //
@@ -36,6 +37,7 @@ static const char *x11_names[] = {
     "XNextEvent",                 //
     "XSendEvent",                 //
     "XPending",                   //
+    "XAllocSizeHints",            //
     "XLookupKeysym",              //
     "XDestroyWindow",             //
     "XCreateSimpleWindow",        //
@@ -46,6 +48,7 @@ static struct x11_api {
   int (*XkbSetDetectableAutoRepeat)(Display *, int, int *);
   Atom (*XInternAtom)(Display *, const char *, int);
   Atom (*XSetWMProtocols)(Display *, Window, Atom *, int);
+  void (*XSetWMNormalHints)(Display *, Window, XSizeHints *);
   int (*XStoreName)(Display *, Window, const char *);
   Display *(*XOpenDisplay)(const char *);
   int (*XCloseDisplay)(Display *);
@@ -55,6 +58,7 @@ static struct x11_api {
   int (*XNextEvent)(Display *, XEvent *);
   int (*XSendEvent)(Display *, Window, int, long, XEvent *);
   int (*XPending)(Display *);
+  XSizeHints *(*XAllocSizeHints)();
   KeySym (*XLookupKeysym)(XKeyEvent *, int);
   int (*XDestroyWindow)(Display *, Window);
   Window (*XCreateSimpleWindow)(
@@ -66,6 +70,7 @@ static struct x11_window {
   Atom wm_protocols;
   Atom wm_delete_window;
 } x11_window;
+static XSizeHints *size_hints = NULL;
 
 /*==================== Declaration ====================*/
 
@@ -120,6 +125,14 @@ struct window_p *api_x11_create_window(int width, int height, const char *title)
   }
 
   x11_api.XSetWMProtocols(win->display, win->window, &x11_window.wm_delete_window, true);
+
+  size_hints = x11_api.XAllocSizeHints();
+  size_hints->flags = PMinSize | PMaxSize;
+  size_hints->max_width = width;
+  size_hints->max_height = height;
+  size_hints->min_height = height;
+  size_hints->min_width = width;
+  x11_api.XSetWMNormalHints(win->display, win->window, size_hints);
 
   win->width = width;
   win->height = height;
@@ -181,6 +194,11 @@ void api_x11_close_window() {
 void api_x11_set_window_fullscreen() {
   XEvent event;
   x11_window.window->fullscreen = !x11_window.window->fullscreen;
+
+  size_hints->flags = (x11_window.window->fullscreen) ? 0 : PMinSize | PMaxSize;
+
+  x11_api.XSetWMNormalHints(x11_window.window->display, x11_window.window->window, size_hints);
+
   Atom wm_state = x11_api.XInternAtom(x11_window.window->display, "_NET_WM_STATE", false);
   Atom wm_fullscreen = x11_api.XInternAtom(x11_window.window->display, "_NET_WM_STATE_FULLSCREEN", false);
   memset(&event, 0, 1);

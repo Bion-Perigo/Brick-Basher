@@ -2,7 +2,7 @@ CC = gcc
 INCLUDES = -Isource/include
 CDEFINES = -D_CRT_SECURE_NO_WARNINGS
 CFLAGS =
-LIBS = 
+LIBS =
 
 # Generating clang files
 ifeq ($(CC), clang)
@@ -16,10 +16,10 @@ ifeq ($(PLATFORM), Windows_NT)
 EXTENCION = .exe
 CDEFINES += -DPLATFORM_WINDOWS
 CFLAGS += -std=c99
-LIBS += 
+LIBS +=
 
 else ifeq ($(PLATFORM), Linux)
-EXTENCION = 
+EXTENCION =
 CDEFINES += -DPLATFORM_LINUX
 CFLAGS += -std=gnu99
 LIBS += -lm
@@ -35,7 +35,7 @@ CDEFINES += -D"CONTENT_PATH=$(abspath content/)/"
 CDEFINES += -D"CONFIG_PATH=$(abspath config/)/"
 else
 COMPILE_MODE = release/
-CFLAGS += 
+CFLAGS +=
 CDEFINES += -DRELEASE_MODE
 CDEFINES += -D"CONTENT_PATH=data/content/"
 CDEFINES += -D"CONFIG_PATH=data/config/"

@@ -1,7 +1,6 @@
 #include "GL/gl_api.h"
 #include "core.h"
 
-#include <X11/Xlib.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -1283,20 +1282,10 @@ static void *lib_gl = NULL;
 
 struct GL_API GL;
 
-// Used in Win32
-void *api_gl_load_lib(const char *lib_name) {
-  lib_gl = load_library_p(lib_name);
-  if (lib_gl == NULL) {
-    G_LOG(LOG_FATAL, "OpenGL Not Loaded Lib Name:%s", lib_name);
-    return NULL;
-  }
-  return lib_gl;
-}
-
 #ifdef PLATFORM_WINDOWS
 // Used in Win32 WGL
-void api_gl_load_functions() {
-  PROC (*wglGetProcAddress)(LPCSTR unnamedParam1) = get_function_p(lib_gl, "wglGetProcAddress");
+void api_gl_win32_load_functions(void *opengl) {
+  PROC (*wglGetProcAddress)(LPCSTR unnamedParam1) = get_function_p(opengl, "wglGetProcAddress");
   const char **func_name = gl_names;
   void *api = &GL;
   void *func = NULL;
@@ -1309,7 +1298,7 @@ void api_gl_load_functions() {
       // G_LOG(LOG_INFO, "Function Loaded:%s", *func_name);
       copy_memory_f(destiny, (char *)&func, sizeof(void *));
     } else {
-      func = get_function_p(lib_gl, *func_name);
+      func = get_function_p(opengl, *func_name);
       if (func != NULL) {
         // G_LOG(LOG_SUCCESS, "Function Loaded:%s", *func_name);
         copy_memory_f(destiny, (char *)&func, sizeof(void *));
@@ -1322,12 +1311,15 @@ void api_gl_load_functions() {
   }
   G_LOG(LOG_INFO, "OpenGL Functions Loaded.");
 }
-
 #endif // PLATFORM_WINDOWS
 
 // Used in Linux
 bool api_gl_init(const char *lib_name) {
-  api_gl_load_lib(lib_name);
+  lib_gl = load_library_p(lib_name);
+  if (lib_gl == NULL) {
+    G_LOG(LOG_FATAL, "OpenGL Not Loaded Lib Name:%s", lib_name);
+    return NULL;
+  }
 
   get_functions_p(lib_gl, &GL, gl_names);
   G_LOG(LOG_INFO, "OpenGL Functions Loaded.");

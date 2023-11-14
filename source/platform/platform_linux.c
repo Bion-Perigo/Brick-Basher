@@ -5,11 +5,13 @@
 #include "GL/glcorearb.h"
 #include "core.h"
 
+#include <bits/time.h>
 #include <dlfcn.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 /*==================== Extern ====================*/
 
@@ -21,7 +23,7 @@ extern bool api_gl_init(const char *lib_name);
 static struct window_api_p win_api;
 static void *lib_egl = NULL;
 
-static const char *egle_names[] = {
+static const char *egl_names[] = {
     "eglGetDisplay",          //
     "eglInitialize",          //
     "eglBindAPI",             //
@@ -33,7 +35,7 @@ static const char *egle_names[] = {
     "\0"                      //
 };
 
-static struct egle_api {
+static struct egl_api {
   PFNEGLGETDISPLAYPROC eglGetDisplay;
   PFNEGLINITIALIZEPROC eglInitialize;
   PFNEGLBINDAPIPROC eglBindAPI;
@@ -42,7 +44,7 @@ static struct egle_api {
   PFNEGLCREATECONTEXTPROC eglCreateContext;
   PFNEGLMAKECURRENTPROC eglMakeCurrent;
   PFNEGLSWAPBUFFERSPROC eglSwapBuffers;
-} egle_api;
+} egl_api;
 
 static struct egl_info {
   EGLDisplay *display;
@@ -55,13 +57,15 @@ static struct window_p *main_window;
 
 /*==================== Declaration ====================*/
 
-bool init_egle_api(int major, int minor, int color_bits, int depth_bits);
-
 /*==================== Definition ====================*/
 
 // Window =========================================
 
 struct window_p *init_window_p(int width, int height, const char *title) {
+  if (main_window != NULL) {
+    G_LOG(LOG_INFO, "Game window already created.");
+    return main_window;
+  }
 
   if (api_x11_init(&win_api)) {
     G_LOG(LOG_INFO, "API X11 Initialized");
@@ -79,7 +83,6 @@ struct window_p *init_window_p(int width, int height, const char *title) {
 
 void close_window_p() {
   CALL_API(win_api.on_close_window, 0);
-  G_LOG(LOG_INFO, "Close Window");
 }
 
 void update_window_p() {
@@ -92,6 +95,10 @@ bool window_should_close_p() {
 
 void set_window_fullscreen_p() {
   CALL_API(win_api.on_set_window_fullscreen, 0);
+}
+
+struct window_p *get_window_p() {
+  return main_window;
 }
 
 void get_window_size_p(int *width, int *height) {
@@ -107,6 +114,36 @@ int get_window_height_p() {
   return main_window->height;
 }
 
+void set_show_cursor_p(bool b_show) {
+  CALL_API(win_api.on_show_cursor, 0, b_show);
+}
+
+void quit_game_p() {
+  main_window->should_close = true;
+}
+float get_time_p() {
+  struct timespec spec = {0};
+  clock_gettime(CLOCK_MONOTONIC, &spec);
+  float time = spec.tv_sec + spec.tv_nsec / 1000000000.0;
+  time /= 1000;
+  return time;
+}
+
+void wait_time_p(double time) {
+  if (time <= 0) {
+    return;
+  }
+  struct timespec req = {0};
+  time_t sec = time;
+  long n_sec = (time - sec) * 1000000000L;
+  req.tv_sec = sec;
+  req.tv_nsec = n_sec;
+
+  while (nanosleep(&req, &req) == 1) {
+    continue;
+  }
+}
+
 // Graphic =========================================
 
 bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
@@ -116,18 +153,18 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
     return false;
   }
 
-  get_functions_p(lib_egl, &egle_api, egle_names);
+  get_functions_p(lib_egl, &egl_api, egl_names);
 
   int egl_major, egl_minor;
 
-  egl_info.display = egle_api.eglGetDisplay(main_window->display);
+  egl_info.display = egl_api.eglGetDisplay(main_window->display);
 
-  if (!egle_api.eglInitialize(egl_info.display, &egl_major, &egl_minor)) {
+  if (!egl_api.eglInitialize(egl_info.display, &egl_major, &egl_minor)) {
     G_LOG(LOG_FATAL, "Init EGL: Not Initialize");
     return false;
   }
 
-  if (!egle_api.eglBindAPI(EGL_OPENGL_API)) {
+  if (!egl_api.eglBindAPI(EGL_OPENGL_API)) {
     G_LOG(LOG_FATAL, "Int EGL: Not bind to OpenGL");
     return false;
   }
@@ -149,13 +186,11 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
   };
 
   EGLint count;
-  if (!egle_api.eglChooseConfig(egl_info.display, attributes_list, &egl_info.config, true, &count) ||
-      count != 1) {
+  if (!egl_api.eglChooseConfig(egl_info.display, attributes_list, &egl_info.config, true, &count) || count != 1) {
     G_LOG(LOG_FATAL, "Init EGL: Not choose config");
     return false;
   }
-  egl_info.surface =
-      egle_api.eglCreateWindowSurface(egl_info.display, egl_info.config, main_window->window, NULL);
+  egl_info.surface = egl_api.eglCreateWindowSurface(egl_info.display, egl_info.config, main_window->window, NULL);
   if (egl_info.surface == EGL_NO_SURFACE) {
     G_LOG(LOG_FATAL, "Init EGL: Not create window surface");
     return false;
@@ -175,14 +210,13 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
       EGL_NONE //
   };
 
-  egl_info.context =
-      egle_api.eglCreateContext(egl_info.display, egl_info.config, EGL_NO_CONTEXT, context_attribs);
+  egl_info.context = egl_api.eglCreateContext(egl_info.display, egl_info.config, EGL_NO_CONTEXT, context_attribs);
   if (egl_info.context == EGL_NO_CONTEXT) {
     G_LOG(LOG_FATAL, "Init EGL: Not create context");
     return false;
   }
 
-  if (!egle_api.eglMakeCurrent(egl_info.display, egl_info.surface, egl_info.surface, egl_info.context)) {
+  if (!egl_api.eglMakeCurrent(egl_info.display, egl_info.surface, egl_info.surface, egl_info.context)) {
     G_LOG(LOG_FATAL, "Init EGL: Not make current");
     return false;
   }
@@ -193,19 +227,15 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
 
   return true;
 }
-void clear_background_p(struct color_f color) {
-  GL.glEnable(GL_DEPTH_TEST);
-  GL.glClearColor(color.r, color.g, color.b, color.a);
-  GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  GL.glViewport(0, 0, main_window->width, main_window->height);
-}
 
-void begin_drawing_p() {
+void begin_frame_p() {
+  begin_time_f();
   CALL_API(win_api.on_update_window, 0);
 }
 
-void end_drawing_p() {
-  egle_api.eglSwapBuffers(egl_info.display, egl_info.surface);
+void end_frame_p() {
+  egl_api.eglSwapBuffers(egl_info.display, egl_info.surface);
+  end_time_f();
 }
 
 // Library =========================================
@@ -264,7 +294,7 @@ void get_functions_p(void *library, void *api, const char **names) {
   }
 }
 
-// Library =========================================
+// Log =========================================
 
 void create_log_p(enum log_level_p level, const char *context, const char *format, ...) {
   char buffer_log[BUFFER_LOG];
@@ -272,19 +302,19 @@ void create_log_p(enum log_level_p level, const char *context, const char *forma
 
   switch (level) {
   case LOG_INFO: {
-    tag = (const char *)"\033[0;97mLOG INFO => ";
+    tag = (const char *)"\033[0;97mINFO => ";
   } break;
   case LOG_SUCCESS: {
-    tag = (const char *)"\033[0;92mLOG SUCCESS => ";
+    tag = (const char *)"\033[0;92mSUCCESS => ";
   } break;
   case LOG_WARNING: {
-    tag = (const char *)"\033[93mLOG WARNING => ";
+    tag = (const char *)"\033[93mWARNING => ";
   } break;
   case LOG_ERROR: {
-    tag = (const char *)"\033[0;91mLOG ERROR => ";
+    tag = (const char *)"\033[0;91mERROR => ";
   } break;
   case LOG_FATAL: {
-    tag = (const char *)"\033[0;31mLOG FATAL => ";
+    tag = (const char *)"\033[0;31mFATAL => ";
   } break;
   }
 

@@ -1,6 +1,6 @@
-CC = clang
+CC = gcc
 INCLUDES = -Isource/include
-CDEFINES =
+CDEFINES = -D_CRT_SECURE_NO_WARNINGS
 CFLAGS =
 LIBS = 
 

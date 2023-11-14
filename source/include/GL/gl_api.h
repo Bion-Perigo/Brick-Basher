@@ -1275,4 +1275,4 @@ struct GL_API {
   PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC glFramebufferTextureMultiviewOVR;
 };
 
-extern struct GL_API GL;
+

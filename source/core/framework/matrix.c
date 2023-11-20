@@ -126,7 +126,7 @@ struct mat4_f matrix_init_ortho_f(float left, float right, float top, float bott
 
   mat.e[0][0] = 2 / (right - left);
   mat.e[1][1] = 2 / (top - bottom);
-  mat.e[3][3] = -2 / (z_far - z_near);
+  mat.e[2][2] = -2 / (z_far - z_near);
   mat.e[3][0] = -(right + left) / (right - left);
   mat.e[3][1] = -(top + bottom) / (top - bottom);
   mat.e[3][2] = -(z_far + z_near) / (z_far - z_near);

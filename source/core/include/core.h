@@ -31,6 +31,22 @@ extern struct GL_API GL;
 
 /*==================== Game Framework ====================*/
 
+enum window_anchor{
+  SCREEN_TOP_LEFT = 0,
+  SCREEN_TOP_RIGHT = 100,
+  SCREEN_BOTTOM_LEFT = 0,
+  SCREEN_BOTTOM_RIGHT = 100,
+  SCREEN_LEFT = 0,
+  SCREEN_RIGHT = 100,
+  SCREEN_TOP = 100,
+  SCREEN_BOTTON = 0,
+};
+
+enum camera_mode{
+  CAMERA_PERSPECTIVE, // Not Implemented
+  CAMERA_ORTHOGRAPHIC,
+};
+
 // Basic Colors
 struct color_f {
   float r;
@@ -70,16 +86,24 @@ struct vector3_f {
   float z;
 };
 
-// Pitch:X Yaw:Y Rol:Z
-struct rotator_f {
+struct rotator_f{
   float pitch;
   float yaw;
-  float rol;
+  float roll;
 };
 
-struct actor_f {
+struct rect_f{
+  float x;
+  float y;
+  float width;
+  float height;
+};
+
+struct sprite_f{
+  unsigned int vao;
+  struct texture_f texture;
   struct vector3_f position;
-  struct rotator_f ratation;
+  struct rotator_f rotation;
   struct vector3_f scale;
 };
 
@@ -186,7 +210,7 @@ enum keybord_p {
   KEY_APOSTROPHE,           // Key: '
   KEY_COMMA,                // Key: ,
   KEY_MINUS,                // Key: -
-  KEY_PERIOD,               // Key: .
+  KEY_PERIOD,               // Key: .w
   KEY_SLASH,                // Key: /
   KEY_ZERO,                 // Key: 0
   KEY_ONE,                  // Key: 1
@@ -333,10 +357,21 @@ void quit_game_p();
 float get_time_p();
 void wait_time_p(double time);
 
-// Graphic =====================
-void graphic_init_f();
-void graphic_update_f();
-void graphic_clear_f(struct color_f color);
+/*==================== Game Graphic ====================*/
+void init_graphic_g();
+void update_graphic_g();
+void clear_background_g(struct color_f color);
+int get_camera_mode_g();
+void set_camera_mode_g(enum camera_mode mode);
+struct mat4_f get_projection_matrix_g();
+struct texture_f create_texture_g(struct image_f *image);
+void destroy_texture_g(struct texture_f texture);
+struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect);
+struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect);
+void destroy_sprite_g(struct sprite_f sprite);
+void draw_sprite_g(struct sprite_f sprite);
+void draw_texture_rect_g(struct texture_f texture, struct rect_f rectangle, struct color_f color);
+shader_f load_shader_g(const char *vertex_path, const char *fragment_path);
 
 // Library =====================
 void *load_library_p(const char *library_name);
@@ -357,6 +392,9 @@ void set_target_fps_f(int max_fps);
 int get_fps_f();
 float get_frametime_f();
 
+// Collision Manager =====================
+bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b);
+
 // Input Manager =====================
 bool is_key_pressed_f(int key_code);
 bool is_key_released_f(int key_code);
@@ -371,15 +409,22 @@ char *resized_memory_f(void *data, size_t new_size);
 char *copy_memory_f(void *destiny, void *source, size_t copy_size);
 bool free_memory_f(void *data);
 char *load_buffer_file(const char *file_name, size_t *file_size, size_t extra_size, size_t offset);
-shader_f load_shader_f(const char *vertex_path, const char *fragment_path);
 
 // Asset Manager
-struct image_f *load_image_default_f(int width, int height);
+struct image_f *load_image_default_f();
 struct image_f *load_image_f(const char *file_name);
 struct texture_f load_texture_f(const char *file_name);
 
 // Utility
-const char *get_file_extencion(const char *file_name);
+const char *get_file_extension(const char *file_name);
+
+// Levels in C
+struct level_f{
+  void (*on_level_begin)();
+  void (*on_level_update)(float delta_time);
+  void (*on_level_draw)(float delta_time);
+  void (*on_level_end)();
+};
 
 // Matrix =====================
 struct mat4_f matrix_identity_f();

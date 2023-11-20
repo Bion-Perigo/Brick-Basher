@@ -1,5 +1,5 @@
 CC = gcc
-INCLUDES = -Isource/include
+INCLUDES = -Isource/core/include
 CDEFINES = -D_CRT_SECURE_NO_WARNINGS
 CFLAGS =
 LIBS =
@@ -51,7 +51,7 @@ TARGET = $(notdir $(CURDIR))
 BUILD_DIR = build/
 OBJ_DIR = $(BUILD_DIR)obj/$(COMPILE_MODE)
 SRC_DIR = source/
-INCLUDE_DIR = $(SRC_DIR)include/
+INCLUDE_DIR = $(SRC_DIR)/core/include/
 CONTENT_DIR = content/
 CONFIG_DIR = config/
 SRC = $(wildcard $(SRC_DIR)*.c) $(wildcard $(SRC_DIR)*/*.c) $(wildcard $(SRC_DIR)*/*/*.c) $(wildcard $(SRC_DIR)*/*/*/*.c)

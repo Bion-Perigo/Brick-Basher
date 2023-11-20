@@ -73,7 +73,7 @@ struct window_p *init_window_p(int width, int height, const char *title) {
     if (!init_opengl_p(3, 3, 8, 8)) {
       G_LOG(LOG_FATAL, "EGL not Initialized");
     }
-    graphic_init_f();
+    init_graphic_g();
     return main_window;
   }
 
@@ -88,7 +88,7 @@ void close_window_p() {
 
 void update_window_p() {
   CALL_API(win_api.on_update_window, 0);
-  graphic_update_f();
+  update_graphic_g();
 }
 
 bool window_should_close_p() {

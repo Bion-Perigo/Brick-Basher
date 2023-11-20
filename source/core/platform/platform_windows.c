@@ -88,7 +88,7 @@ struct window_p *init_window_p(int width, int height, const char *title) {
       G_LOG(LOG_FATAL, "OpenGL Not Initialized");
       return NULL;
     }
-    graphic_init_f();
+    init_graphic_g();
     return main_window;
   }
   G_LOG(LOG_FATAL, "No window API loaded");
@@ -101,6 +101,7 @@ void close_window_p() {
 
 void update_window_p() {
   CALL_API(win_api.on_update_window, 0);
+  update_graphic_g();
 }
 
 bool window_should_close_p() {

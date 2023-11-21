@@ -6,6 +6,7 @@ struct level_f current_level;
 void game_start(){
   current_level = load_level_1();
   current_level.on_level_begin();
+
 }
 
 void game_update(float delta_time){

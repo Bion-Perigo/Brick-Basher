@@ -83,7 +83,7 @@ void level_1_update(float delta_time){
       ball_speed.x = max_speed * right_value;
       ball_speed.y = max_speed;
     }
-    G_LOG(LOG_INFO, "Player Position X:%f, Y:%f, Z:%f", player.position.x, player.position.y, player.position.z);
+    //G_LOG(LOG_INFO, "Player Position X:%f, Y:%f, Z:%f", player.position.x, player.position.y, player.position.z);
     for(int i = 0; i < BRICK_COUNT; i++){
       if(check_collision_sprite_f(ball, bricks[i])){
         bricks[i].position.y = SCREEN_TOP + 100;
@@ -132,7 +132,6 @@ void level_1_update(float delta_time){
       ball.position.y -= gravity;
       ball.rotation.roll += 10.f * right_value;
     }
-
 }
 
 void level_1_draw(float delta_time){

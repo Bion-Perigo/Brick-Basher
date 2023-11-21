@@ -6,7 +6,7 @@ extern void game_update(float delta_time);
 extern void game_draw(float delta_time);
 extern void game_stop();
 
-int brick_main(int argc, char *argv[]) {
+int brick_main(int argc, char **argv) {
   const float aspect = 1.7777;
   const int width = 1366;
   const int height = width / aspect;
@@ -29,7 +29,11 @@ int brick_main(int argc, char *argv[]) {
   return 0;
 }
 
-#if defined(PLATFORM_LINUX) || defined(DEBUG_MODE)
+#if defined(PLATFORM_WINDOWS) && defined(RELEASE_MODE)
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd){
+  return brick_main(0, (char**)lpCmdLine);
+}
+#elif defined(PLATFORM_LINUX) || defined(DEBUG_MODE)
 int main(int argc, char *argv[]){
   brick_main(argc, argv);
 }

@@ -246,8 +246,6 @@ void api_win32_update_window() {
 
   struct window_p *win = &win32_window.main_window;
   MSG msg;
-
-  api_win32_set_window_title_info();
   copy_memory_f((char *)previous_keys, (char *)current_keys, sizeof(char) * KEY_MAX);
   api_win32_update_keybord(MOUSE_FORWARD_CODE, false);
   api_win32_update_keybord(MOUSE_BACKWARD_CODE, false);

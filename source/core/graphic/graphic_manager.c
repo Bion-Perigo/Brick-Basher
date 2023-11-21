@@ -3,7 +3,7 @@
 #include "core.h"
 
 #define Z_NEAR 0.f
-#define Z_FAR 10.f
+#define Z_FAR  10.f
 
 static enum camera_mode camera_mode = CAMERA_ORTHOGRAPHIC;
 static unsigned int default_shader = 0;
@@ -12,9 +12,9 @@ void init_graphic_g() {
   const char *source_vertex = FIND_ASSET("shader/default_vertex.vert");
   const char *source_fragment = FIND_ASSET("shader/default_fragment.frag");
   default_shader = load_shader_g(source_vertex, source_fragment);
-  if(default_shader != 0){
+  if (default_shader != 0) {
     G_LOG(LOG_INFO, "GRAPHIC: Loaded Default Shader");
-  }else{
+  } else {
     G_LOG(LOG_INFO, "GRAPHIC: Not Loaded Default Shader");
   }
 
@@ -32,23 +32,23 @@ void clear_background_g(struct color_f color) {
   GL.glViewport(0, 0, get_window_width_p(), get_window_height_p());
 }
 
-int get_camera_mode_g(){
+int get_camera_mode_g() {
   return camera_mode;
 }
-void set_camera_mode_g(enum camera_mode mode){
+void set_camera_mode_g(enum camera_mode mode) {
   camera_mode = mode;
 }
 
-struct mat4_f get_projection_matrix_g(){
+struct mat4_f get_projection_matrix_g() {
   struct mat4_f cam_proj = matrix_identity_f();
-  if(camera_mode == CAMERA_ORTHOGRAPHIC){
+  if (camera_mode == CAMERA_ORTHOGRAPHIC) {
     cam_proj = matrix_init_ortho_f(0, 100, 100, 0, Z_NEAR, Z_FAR);
   }
 
   return cam_proj;
 }
 
-struct texture_f create_texture_g(struct image_f *image){
+struct texture_f create_texture_g(struct image_f *image) {
   struct texture_f texture = {0};
   struct image_f *img = {0};
   unsigned int txd = 0;
@@ -57,30 +57,31 @@ struct texture_f create_texture_g(struct image_f *image){
 
   img = image;
 
-  if(image == NULL){
+  if (image == NULL) {
     G_LOG(LOG_INFO, "GRAPHIC: Image is Null");
     img = load_image_default_f();
   }
 
-  switch (img->format){
-    case 32:{
-      color_format = GL_RGBA;
-      color_type = GL_UNSIGNED_BYTE;
-    }break;
-    case 24:{
-      color_format = GL_RGB;
-      color_type = GL_UNSIGNED_BYTE;
-    }break;
-    case 16:{
-      color_format = GL_RGB;
-      color_type = GL_UNSIGNED_SHORT_5_6_5;
-    }break;
+  switch (img->format) {
+  case 32: {
+    color_format = GL_RGBA;
+    color_type = GL_UNSIGNED_BYTE;
+  } break;
+  case 24: {
+    color_format = GL_RGB;
+    color_type = GL_UNSIGNED_BYTE;
+  } break;
+  case 16: {
+    color_format = GL_RGB;
+    color_type = GL_UNSIGNED_SHORT_5_6_5;
+  } break;
   }
 
   GL.glGenTextures(1, &txd);
   GL.glActiveTexture(GL_TEXTURE0);
   GL.glBindTexture(GL_TEXTURE_2D, txd);
-  GL.glTexImage2D(GL_TEXTURE_2D, 0, color_format, img->width, img->height, 0, color_format, color_type, img->data);
+  GL.glTexImage2D(
+      GL_TEXTURE_2D, 0, color_format, img->width, img->height, 0, color_format, color_type, img->data);
   GL.glGenerateMipmap(GL_TEXTURE_2D);
   GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -98,18 +99,18 @@ struct texture_f create_texture_g(struct image_f *image){
   return texture;
 }
 
-void destroy_texture_g(struct texture_f texture){
-  GL.glDeleteTextures(1, (const GLuint*)&texture.id);
+void destroy_texture_g(struct texture_f texture) {
+  GL.glDeleteTextures(1, (const GLuint *)&texture.id);
 }
 
-struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect){
+struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect) {
   struct texture_f texture = load_texture_f(texture_name);
   struct sprite_f sprite = create_sprite_from_texture_g(texture, rect);
 
   return sprite;
 }
 
-struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect){
+struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect) {
   unsigned int VAO, VBO, IBO;
 
   GL.glGenVertexArrays(1, &VAO);
@@ -118,23 +119,23 @@ struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct re
   struct color_f color = WHITE;
 
   // Vertices = 3.f Colors = 4.f Texture 2.f
-  float vertices[]= {
-    //[Vector =====] [============= Color =============] [Texture]
-    1.f,  1.f , 0.f, color.r, color.g, color.b, color.a, 1.f, 1.f, // Top Right
-    1.f,  -1.f, 0.f, color.r, color.g, color.b, color.a, 1.f, 0.f, // Bottom Right
-    -1.f, -1.f, 0.f, color.r, color.g, color.b, color.a, 0.f, 0.f, // Bottom Left
-    -1.f, 1.f, 0.f,  color.r, color.g, color.b, color.a, 0.f, 1.f, // Top Left
+  float vertices[] = {
+      //[Vector =====] [============= Color =============] [Texture]
+      1.f,  1.f,  0.f, color.r, color.g, color.b, color.a, 1.f, 1.f, // Top Right
+      1.f,  -1.f, 0.f, color.r, color.g, color.b, color.a, 1.f, 0.f, // Bottom Right
+      -1.f, -1.f, 0.f, color.r, color.g, color.b, color.a, 0.f, 0.f, // Bottom Left
+      -1.f, 1.f,  0.f, color.r, color.g, color.b, color.a, 0.f, 1.f, // Top Left
   };
 
   GL.glGenBuffers(1, &VBO);
   GL.glBindBuffer(GL_ARRAY_BUFFER, VBO);
   GL.glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   GL.glEnableVertexAttribArray(0);
-  GL.glVertexAttribPointer(0, 3,GL_FLOAT, GL_TRUE, 9 * sizeof(float), NULL);
+  GL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, 9 * sizeof(float), NULL);
   GL.glEnableVertexAttribArray(1);
-  GL.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
+  GL.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)(3 * sizeof(float)));
   GL.glEnableVertexAttribArray(2);
-  GL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(7 * sizeof(float)));
+  GL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)(7 * sizeof(float)));
 
   int index[] = {0, 1, 2, 2, 3, 0};
   GL.glGenBuffers(1, &IBO);
@@ -150,22 +151,24 @@ struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct re
   return sprite;
 }
 
-void destroy_sprite_g(struct sprite_f sprite){
+void destroy_sprite_g(struct sprite_f sprite) {
   GL.glDeleteBuffers(1, &sprite.vao);
   destroy_texture_g(sprite.texture);
 }
 
-void draw_sprite_g(struct sprite_f sprite){
+void draw_sprite_g(struct sprite_f sprite) {
   struct mat4_f m_translate = matrix_init_translation_f(sprite.position.x, sprite.position.y, sprite.position.z);
-  struct mat4_f m_rotation = matrix_init_rotation_f(sprite.rotation.pitch, sprite.rotation.yaw, sprite.rotation.roll);
+  struct mat4_f m_rotation =
+      matrix_init_rotation_f(sprite.rotation.pitch, sprite.rotation.yaw, sprite.rotation.roll);
   struct mat4_f m_scale = matrix_init_scale_f(sprite.scale.x, sprite.scale.y, sprite.scale.z);
   struct mat4_f m_model = matrix_identity_f();
-  
+
   m_model = matrix_mult_f(m_rotation, m_scale);
   m_model = matrix_mult_f(m_translate, m_model);
 
-  GL.glUniformMatrix4fv(GL.glGetUniformLocation(default_shader, "proj"), 1, GL_FALSE, (const float*)get_projection_matrix_g().e);
-  GL.glUniformMatrix4fv(GL.glGetUniformLocation(default_shader, "model"), 1, GL_FALSE, (const float*)m_model.e);
+  GL.glUniformMatrix4fv(
+      GL.glGetUniformLocation(default_shader, "proj"), 1, GL_FALSE, (const float *)get_projection_matrix_g().e);
+  GL.glUniformMatrix4fv(GL.glGetUniformLocation(default_shader, "model"), 1, GL_FALSE, (const float *)m_model.e);
 
   GL.glUseProgram(default_shader);
   GL.glBindVertexArray(sprite.vao);
@@ -173,7 +176,6 @@ void draw_sprite_g(struct sprite_f sprite){
   GL.glBindTexture(GL_TEXTURE_2D, sprite.texture.id);
   GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 }
-
 
 // Need to Refactor
 shader_f load_shader_g(const char *vertex_path, const char *fragment_path) {

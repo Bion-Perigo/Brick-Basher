@@ -144,7 +144,7 @@ struct image_f *load_image_f(const char *file_name) {
     return NULL;
   }
 
-  const char *type = get_file_extension(file_name);
+  const char *type = get_file_extension_f(file_name);
 
   if (strcmp(type, ".bmp") || strcmp(type, ".BMP")) {
     image = load_bitmap(file_name);
@@ -160,7 +160,7 @@ struct image_f *load_image_f(const char *file_name) {
   return load_image_default_f();
 }
 
-struct texture_f load_texture_f(const char *file_name){
+struct texture_f load_texture_f(const char *file_name) {
   struct image_f *img = load_image_f(file_name);
   struct texture_f texture = create_texture_g(img);
   free_memory_f(img);

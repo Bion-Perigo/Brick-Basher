@@ -1,6 +1,6 @@
 #include "core.h"
 
-bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b){  
+bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b) {
   float a_bottom = a.position.y - a.scale.y;
   float a_top = a.position.y + a.scale.y;
   float a_left = a.position.x - a.scale.x;
@@ -14,7 +14,7 @@ bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b){
   bool coll_x = (b_left < a_right && a_left < b_right);
   bool coll_y = (b_top > a_bottom && a_top > b_bottom);
 
-  if(coll_x && coll_y){
+  if (coll_x && coll_y) {
     return true;
   }
   return false;

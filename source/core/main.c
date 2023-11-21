@@ -25,17 +25,19 @@ int brick_main(int argc, char **argv) {
     game_draw(get_frametime_f());
     end_frame_p();
   }
+
   game_stop();
+
   close_window_p();
   return 0;
 }
 
 #if defined(PLATFORM_WINDOWS) && defined(RELEASE_MODE)
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd){
-  return brick_main(0, (char**)lpCmdLine);
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+  return brick_main(0, (char **)lpCmdLine);
 }
 #elif defined(PLATFORM_LINUX) || defined(DEBUG_MODE)
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
   brick_main(argc, argv);
 }
 #endif // PLATFORM_LINUX OR DEBUG_MODE

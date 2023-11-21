@@ -31,7 +31,7 @@ extern struct GL_API GL;
 
 /*==================== Game Framework ====================*/
 
-enum window_anchor{
+enum window_anchor {
   SCREEN_TOP_LEFT = 0,
   SCREEN_TOP_RIGHT = 100,
   SCREEN_BOTTOM_LEFT = 0,
@@ -42,7 +42,7 @@ enum window_anchor{
   SCREEN_BOTTON = 0,
 };
 
-enum camera_mode{
+enum camera_mode {
   CAMERA_PERSPECTIVE, // Not Implemented
   CAMERA_ORTHOGRAPHIC,
 };
@@ -86,20 +86,20 @@ struct vector3_f {
   float z;
 };
 
-struct rotator_f{
+struct rotator_f {
   float pitch;
   float yaw;
   float roll;
 };
 
-struct rect_f{
+struct rect_f {
   float x;
   float y;
   float width;
   float height;
 };
 
-struct sprite_f{
+struct sprite_f {
   unsigned int vao;
   struct texture_f texture;
   struct vector3_f position;
@@ -170,6 +170,14 @@ struct sprite_f{
   CLITERAL(struct color_f) { \
     0.53f, 0.12f, 0.47f, 1.f \
   }
+
+// Levels in C
+struct level_f {
+  void (*on_level_begin)();
+  void (*on_level_update)(float delta_time);
+  void (*on_level_draw)(float delta_time);
+  void (*on_level_end)();
+};
 
 /*==================== Game Platform ====================*/
 
@@ -350,8 +358,6 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits);
 void begin_frame_p();
 void end_frame_p();
 
-// Drawing ====================
-
 // Functionalities ====================
 void quit_game_p();
 float get_time_p();
@@ -370,7 +376,6 @@ struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect);
 struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect);
 void destroy_sprite_g(struct sprite_f sprite);
 void draw_sprite_g(struct sprite_f sprite);
-void draw_texture_rect_g(struct texture_f texture, struct rect_f rectangle, struct color_f color);
 shader_f load_shader_g(const char *vertex_path, const char *fragment_path);
 
 // Library =====================
@@ -416,15 +421,7 @@ struct image_f *load_image_f(const char *file_name);
 struct texture_f load_texture_f(const char *file_name);
 
 // Utility
-const char *get_file_extension(const char *file_name);
-
-// Levels in C
-struct level_f{
-  void (*on_level_begin)();
-  void (*on_level_update)(float delta_time);
-  void (*on_level_draw)(float delta_time);
-  void (*on_level_end)();
-};
+const char *get_file_extension_f(const char *file_name);
 
 // Matrix =====================
 struct mat4_f matrix_identity_f();

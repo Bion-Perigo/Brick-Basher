@@ -1,22 +1,21 @@
 #include "core.h"
-#include "level_1.h"
 
+extern struct level_f load_level_1();
 struct level_f current_level;
 
-void game_start(){
+void game_start() {
   current_level = load_level_1();
   current_level.on_level_begin();
-
 }
 
-void game_update(float delta_time){
+void game_update(float delta_time) {
   current_level.on_level_update(delta_time);
 }
 
-void game_draw(float delta_time){
+void game_draw(float delta_time) {
   current_level.on_level_draw(delta_time);
 }
 
-void game_stop(){
+void game_stop() {
   current_level.on_level_end();
 }

@@ -9,7 +9,7 @@ To use in Vim/Nvim, change the compiler in the Makefile to clang.
 
 # Requirements
 For Linux => libX11, libGL and libEGL  
-For Windows => Windows 10 or Windos 11
+For Windows => Windows 10 or Windows 11
 
 # Commands  
 Toggle Fullscreen (TAB)  

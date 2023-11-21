@@ -25,6 +25,7 @@ int brick_main(int argc, char **argv) {
     game_draw(get_frametime_f());
     end_frame_p();
   }
+  game_stop();
   close_window_p();
   return 0;
 }

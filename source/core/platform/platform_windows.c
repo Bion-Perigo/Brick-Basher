@@ -70,6 +70,7 @@ static struct win_console {
 static struct window_api_p win_api;
 static struct window_p *main_window;
 static LARGE_INTEGER api_win_time_frequency;
+static bool b_show_cursor = false;
 
 /*==================== Definitions ====================*/
 
@@ -129,7 +130,12 @@ int get_window_height_p() {
   return main_window->height;
 }
 
+bool get_show_cursor_p() {
+  return b_show_cursor;
+}
+
 void set_show_cursor_p(bool b_show) {
+  b_show_cursor = b_show;
   CALL_API(win_api.on_show_cursor, 0, b_show);
 }
 void quit_game_p() {

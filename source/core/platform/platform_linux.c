@@ -21,6 +21,7 @@ extern bool api_gl_init(const char *lib_name);
 /*==================== Variables ====================*/
 
 static struct window_api_p win_api;
+static bool b_show_cursor = false;
 static void *lib_egl = NULL;
 
 static const char *egl_names[] = {
@@ -116,7 +117,12 @@ int get_window_height_p() {
   return main_window->height;
 }
 
+bool get_show_cursor_p() {
+  return b_show_cursor;
+}
+
 void set_show_cursor_p(bool b_show) {
+  b_show_cursor = b_show;
   CALL_API(win_api.on_show_cursor, 0, b_show);
 }
 

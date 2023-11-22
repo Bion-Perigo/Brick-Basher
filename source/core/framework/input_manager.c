@@ -36,3 +36,10 @@ int get_mouse_x_f() {
 int get_mouse_y_f() {
   return (mouse_position[1] > 0) ? mouse_position[1] : 0;
 }
+
+struct vector2_f get_mouse_screen_position_f() {
+  struct vector2_f pos = {0};
+  pos.x = map_range_f(0, get_window_width_p(), 0, 100, mouse_position[0]);
+  pos.y = map_range_f(0, get_window_height_p(), 100, 0, mouse_position[1]);
+  return pos;
+}

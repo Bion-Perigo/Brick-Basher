@@ -1,4 +1,4 @@
-CC = gcc
+CC = clang
 INCLUDES = -Isource/core/include
 CDEFINES = -D_CRT_SECURE_NO_WARNINGS
 CFLAGS =

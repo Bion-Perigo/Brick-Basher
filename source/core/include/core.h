@@ -31,7 +31,7 @@ extern struct GL_API GL;
 
 /*==================== Game Framework ====================*/
 
-enum window_anchor {
+enum window_anchor_f {
   SCREEN_TOP_LEFT = 0,
   SCREEN_TOP_RIGHT = 100,
   SCREEN_BOTTOM_LEFT = 0,
@@ -40,9 +40,10 @@ enum window_anchor {
   SCREEN_RIGHT = 100,
   SCREEN_TOP = 100,
   SCREEN_BOTTON = 0,
+  SCREEN_CENTER = 50,
 };
 
-enum camera_mode {
+enum camera_mode_f {
   CAMERA_PERSPECTIVE, // Not Implemented
   CAMERA_ORTHOGRAPHIC,
 };
@@ -106,6 +107,37 @@ struct sprite_f {
   struct rotator_f rotation;
   struct vector3_f scale;
 };
+
+enum buttom_state_f {
+  BUTTOM_NONE,
+  BUTTOM_HOVERED,
+  BUTTON_UNHOVERED,
+  BUTTOM_PRESSED,
+  BUTTON_RELEASED,
+};
+
+struct buttom_f {
+  int index;
+  struct sprite_f icon;
+  enum buttom_state_f state;
+  void (*on_hovered)(struct buttom_f *buttom);
+  void (*on_unhovered)(struct buttom_f *buttom);
+  void (*on_pressed)(struct buttom_f *buttom);
+  void (*on_release)(struct buttom_f *buttom);
+  void (*on_clicked)(struct buttom_f *buttom);
+};
+
+// Make Vectors
+
+#define VEC2(x, y)     \
+  (struct vector2_f) { \
+    x, y               \
+  }
+
+#define VEC3(x, y, z)  \
+  (struct vector3_f) { \
+    x, y, z            \
+  }
 
 #define CLITERAL(type) (type)
 //#define CLITERAL(type) type
@@ -173,7 +205,7 @@ struct sprite_f {
 
 // Levels in C
 struct level_f {
-  void (*on_level_begin)();
+  void (*on_level_start)();
   void (*on_level_update)(float delta_time);
   void (*on_level_draw)(float delta_time);
   void (*on_level_end)();
@@ -354,6 +386,7 @@ void get_window_size_p(int *width, int *height);
 int get_window_width_p();
 int get_window_height_p();
 void set_show_cursor_p(bool b_show);
+bool get_show_cursor_p();
 bool init_opengl_p(int major, int minor, int color_bits, int depth_bits);
 void begin_frame_p();
 void end_frame_p();
@@ -368,7 +401,7 @@ void init_graphic_g();
 void update_graphic_g();
 void clear_background_g(struct color_f color);
 int get_camera_mode_g();
-void set_camera_mode_g(enum camera_mode mode);
+void set_camera_mode_g(enum camera_mode_f mode);
 struct mat4_f get_projection_matrix_g();
 struct texture_f create_texture_g(struct image_f *image);
 void destroy_texture_g(struct texture_f texture);
@@ -399,6 +432,7 @@ float get_frametime_f();
 
 // Collision Manager =====================
 bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b);
+bool check_collision_sprite_pointer_f(struct sprite_f a, struct vector2_f v);
 
 // Input Manager =====================
 bool is_key_pressed_f(int key_code);
@@ -407,6 +441,7 @@ bool is_key_repeat_f(int key_code);
 void get_mouse_position_f(int *x, int *y);
 int get_mouse_x_f();
 int get_mouse_y_f();
+struct vector2_f get_mouse_screen_position_f();
 
 // Memory Manager =====================
 char *get_memory_f(size_t data_size);
@@ -420,8 +455,20 @@ struct image_f *load_image_default_f();
 struct image_f *load_image_f(const char *file_name);
 struct texture_f load_texture_f(const char *file_name);
 
+// Math
+float map_range_f(float in_a, float in_b, float out_a, float out_b, float value);
+struct vector3_f vector3_add_scale(struct vector3_f v, float scale);
+struct vector3_f vector3_sub_scale(struct vector3_f v, float scale);
+
+// UserInterface
+struct buttom_f create_buttom_f(struct rect_f rect);
+void update_buttom_f(struct buttom_f *buttom);
+
 // Utility
 const char *get_file_extension_f(const char *file_name);
+
+// Game
+void open_level_f(struct level_f level);
 
 // Matrix =====================
 struct mat4_f matrix_identity_f();

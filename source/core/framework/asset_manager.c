@@ -95,9 +95,9 @@ struct image_f *load_bitmap(const char *file_name) {
 }
 
 struct image_f *load_image_default_f() {
-  static struct image_f default_image = {0};
-  if (default_image.data != NULL) {
-    return &default_image;
+  struct image_f *default_image = NULL;
+  if (default_image != NULL) {
+    return default_image;
   }
 
   const int tex_width = 512;
@@ -106,6 +106,7 @@ struct image_f *load_image_default_f() {
   const int square_count = 8;
   const int square_size = tex_width / square_count;
 
+  default_image = (struct image_f *)get_memory_f(sizeof(struct image_f));
   unsigned char *data = (unsigned char *)get_memory_f(tex_width * tex_height * tex_format);
   unsigned char *pixel = data;
 
@@ -128,13 +129,13 @@ struct image_f *load_image_default_f() {
     }
   }
 
-  default_image.width = tex_width;
-  default_image.height = tex_height;
-  default_image.format = tex_format;
-  default_image.data = (char *)data;
+  default_image->width = tex_width;
+  default_image->height = tex_height;
+  default_image->format = tex_format;
+  default_image->data = (char *)data;
 
   G_LOG(LOG_INFO, "ASSET:Default Image Loaded!");
-  return &default_image;
+  return default_image;
 }
 
 struct image_f *load_image_f(const char *file_name) {

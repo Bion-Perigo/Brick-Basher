@@ -5,7 +5,7 @@
 #define Z_NEAR 0.f
 #define Z_FAR  10.f
 
-static enum camera_mode camera_mode = CAMERA_ORTHOGRAPHIC;
+static enum camera_mode_f camera_mode = CAMERA_ORTHOGRAPHIC;
 static unsigned int default_shader = 0;
 
 void init_graphic_g() {
@@ -35,7 +35,7 @@ void clear_background_g(struct color_f color) {
 int get_camera_mode_g() {
   return camera_mode;
 }
-void set_camera_mode_g(enum camera_mode mode) {
+void set_camera_mode_g(enum camera_mode_f mode) {
   camera_mode = mode;
 }
 
@@ -227,7 +227,6 @@ shader_f load_shader_g(const char *vertex_path, const char *fragment_path) {
 
   file_buffer = (char *)calloc(1, file_size);
   fread((char *)file_buffer, file_size, 1, file);
-
   GLuint f_shader = GL.glCreateShader(GL_FRAGMENT_SHADER);
   GL.glShaderSource(f_shader, 1, &file_buffer, 0);
   GL.glCompileShader(f_shader);

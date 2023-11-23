@@ -32,10 +32,6 @@ extern struct GL_API GL;
 /*==================== Game Framework ====================*/
 
 enum window_anchor_f {
-  SCREEN_TOP_LEFT = 0,
-  SCREEN_TOP_RIGHT = 100,
-  SCREEN_BOTTOM_LEFT = 0,
-  SCREEN_BOTTOM_RIGHT = 100,
   SCREEN_LEFT = 0,
   SCREEN_RIGHT = 100,
   SCREEN_TOP = 100,
@@ -106,6 +102,8 @@ struct sprite_f {
   struct vector3_f position;
   struct rotator_f rotation;
   struct vector3_f scale;
+  struct vector2_f uv;
+  struct vector2_f frames;
 };
 
 enum buttom_state_f {
@@ -409,6 +407,7 @@ struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect);
 struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect);
 void destroy_sprite_g(struct sprite_f sprite);
 void draw_sprite_g(struct sprite_f sprite);
+void create_flip_book_f(const char *file_name, int frames, int colluns, int lines);
 shader_f load_shader_g(const char *vertex_path, const char *fragment_path);
 
 // Library =====================

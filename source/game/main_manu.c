@@ -23,7 +23,6 @@ void buttom_on_unhovered(struct buttom_f *buttom);
 void buttom_on_start_game(struct buttom_f *buttom);
 void buttom_on_set_fullscreen(struct buttom_f *buttom);
 void buttom_on_quit_game(struct buttom_f *buttom);
-void buttom_on_clickd(struct buttom_f *buttom);
 
 struct level_f load_main_menu() {
   struct level_f lv = {0};

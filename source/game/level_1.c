@@ -15,6 +15,7 @@ static void level_end();
 static struct level_1 {
   struct sprite_f level;
   struct sprite_f player;
+  struct sprite_f life;
   struct sprite_f ball;
   struct sprite_f bricks[BRICK_COUNT];
   struct texture_f brick_texture;
@@ -54,6 +55,11 @@ void level_start() {
 
   struct rect_f player_rect = {50.f, 2.f, 6.f, 3.f};
   this->player = create_sprite_g(FIND_ASSET("texture/actors/player.bmp"), player_rect);
+
+  struct rect_f life_rect = {SCREEN_CENTER, SCREEN_CENTER, 2, 2};
+  this->life = create_sprite_g(FIND_ASSET("texture/actors/life.bmp"), life_rect);
+  this->life.frames.x = 4;
+  this->life.uv.x = this->life.frames.x - 1;
 
   struct rect_f ball_rect = {0.f, 0.f, 2.f, 2.f};
   this->ball = create_sprite_g(FIND_ASSET("texture/actors/ball.bmp"), ball_rect);
@@ -136,6 +142,7 @@ void level_update(float delta_time) {
     if (this->player_life == 0) {
       open_level_f(load_main_menu());
     }
+    this->life.uv.x -= 1;
     this->player_life--;
 
   } else if (this->ball.position.y + this->ball.scale.y > SCREEN_TOP) {
@@ -145,6 +152,8 @@ void level_update(float delta_time) {
   if (is_key_pressed_f(KEY_BACKSPACE)) {
     destroy_texture_g(this->player.texture);
   }
+
+  this->life.position = this->player.position;
 
   if (this->ball_stopped) {
     this->ball.position.x = this->player.position.x;
@@ -158,6 +167,7 @@ void level_update(float delta_time) {
 }
 
 void level_draw(float delta_time) {
+  draw_sprite_g(this->life);
   draw_sprite_g(this->level);
   draw_sprite_g(this->player);
   draw_sprite_g(this->ball);
@@ -170,6 +180,7 @@ void level_draw(float delta_time) {
 void level_end() {
   destroy_sprite_g(this->level);
   destroy_sprite_g(this->player);
+  destroy_sprite_g(this->life);
   destroy_sprite_g(this->ball);
   for (int i = 0; i < BRICK_COUNT; i++) {
     destroy_sprite_g(this->bricks[i]);

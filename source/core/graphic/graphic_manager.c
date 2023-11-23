@@ -2,6 +2,8 @@
 #include "GL/glcorearb.h"
 #include "core.h"
 
+#include <stdbool.h>
+
 #define Z_NEAR 0.f
 #define Z_FAR  10.f
 
@@ -42,7 +44,7 @@ void set_camera_mode_g(enum camera_mode_f mode) {
 struct mat4_f get_projection_matrix_g() {
   struct mat4_f cam_proj = matrix_identity_f();
   if (camera_mode == CAMERA_ORTHOGRAPHIC) {
-    cam_proj = matrix_init_ortho_f(0, 100, 100, 0, Z_NEAR, Z_FAR);
+    cam_proj = matrix_init_ortho_f(SCREEN_LEFT, SCREEN_RIGHT, SCREEN_TOP, SCREEN_BOTTON, Z_NEAR, Z_FAR);
   }
 
   return cam_proj;
@@ -147,6 +149,8 @@ struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct re
   sprite.position = (struct vector3_f){rect.x, rect.y, 0.f};
   sprite.scale = (struct vector3_f){rect.width, rect.height, 1.f};
   sprite.texture = texture;
+  sprite.uv = VEC2(0.f, 0.f);
+  sprite.frames = VEC2(1.f, 1.f);
 
   return sprite;
 }
@@ -166,9 +170,18 @@ void draw_sprite_g(struct sprite_f sprite) {
   m_model = matrix_mult_f(m_rotation, m_scale);
   m_model = matrix_mult_f(m_translate, m_model);
 
-  GL.glUniformMatrix4fv(
-      GL.glGetUniformLocation(default_shader, "proj"), 1, GL_FALSE, (const float *)get_projection_matrix_g().e);
-  GL.glUniformMatrix4fv(GL.glGetUniformLocation(default_shader, "model"), 1, GL_FALSE, (const float *)m_model.e);
+  unsigned int proj_id = GL.glGetUniformLocation(default_shader, "proj");
+  unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
+  unsigned int color_id = GL.glGetUniformLocation(default_shader, "color");
+  unsigned int uv_id = GL.glGetUniformLocation(default_shader, "uv");
+  unsigned int frames_id = GL.glGetUniformLocation(default_shader, "frames");
+  struct color_f color = WHITE;
+
+  GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)get_projection_matrix_g().e);
+  GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)m_model.e);
+  GL.glUniform4fv(color_id, 1, (const float *)&color);
+  GL.glUniform2fv(uv_id, 1, (const float *)&sprite.uv);
+  GL.glUniform2fv(frames_id, 1, (const float *)&sprite.frames);
 
   GL.glUseProgram(default_shader);
   GL.glBindVertexArray(sprite.vao);

@@ -26,6 +26,7 @@ void init_graphic_g() {
 }
 
 void update_graphic_g() {
+  G_LOG(LOG_INFO, "UPDATE GRAPHIC");
 }
 
 void clear_background_g(struct color_f color) {
@@ -45,9 +46,17 @@ struct mat4_f get_projection_matrix_g() {
   struct mat4_f cam_proj = matrix_identity_f();
   if (camera_mode == CAMERA_ORTHOGRAPHIC) {
     cam_proj = matrix_init_ortho_f(SCREEN_LEFT, SCREEN_RIGHT, SCREEN_TOP, SCREEN_BOTTON, Z_NEAR, Z_FAR);
+  }else if(camera_mode == CAMERA_PERSPECTIVE){
+    G_LOG(LOG_WARNING, "Perspective camera not implemented");
   }
 
   return cam_proj;
+}
+
+struct mat4_f get_view_matrix_g() {
+  struct mat4_f camera_model = matrix_init_translation_f(0.f, 0.f, 0.f);
+  struct mat4_f view_matrix = matrix_inverse_f(camera_model);
+  return view_matrix;
 }
 
 struct texture_f create_texture_g(struct image_f *image) {
@@ -171,6 +180,7 @@ void draw_sprite_g(struct sprite_f sprite) {
   m_model = matrix_mult_f(m_translate, m_model);
 
   unsigned int proj_id = GL.glGetUniformLocation(default_shader, "proj");
+  unsigned int view_id = GL.glGetUniformLocation(default_shader, "view");
   unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
   unsigned int color_id = GL.glGetUniformLocation(default_shader, "color");
   unsigned int uv_id = GL.glGetUniformLocation(default_shader, "uv");
@@ -178,6 +188,7 @@ void draw_sprite_g(struct sprite_f sprite) {
   struct color_f color = WHITE;
 
   GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)get_projection_matrix_g().e);
+  GL.glUniformMatrix4fv(view_id, 1, GL_FALSE, (const float *)get_view_matrix_g().e);
   GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)m_model.e);
   GL.glUniform4fv(color_id, 1, (const float *)&color);
   GL.glUniform2fv(uv_id, 1, (const float *)&sprite.uv);

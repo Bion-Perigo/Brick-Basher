@@ -4,12 +4,15 @@
 #include "core.h"
 
 #include <math.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define CONTEXT_LOG                         " -> File:" STR(__FILE__) " Line:" STR(__LINE__)
 #define BUFFER_LOG                          1024
+#define STRING_STACK                        30
 #define NO_EXPAND(a)                        #a
 #define STR(a)                              NO_EXPAND(a)
 #define CONCAT(a, b)                        a##b
@@ -18,13 +21,24 @@
 #define G_LOG(log_level, format, ...)       create_log_p(log_level, CONTEXT_LOG, format, ##__VA_ARGS__);
 #define CALL_API(function_ptr, return, ...) (function_ptr != NULL) ? function_ptr(__VA_ARGS__) : return
 
-/*==================== Game Platform ====================*/
-
 typedef unsigned int shader_f;
 
 #ifndef M_PI
 #define M_PI 3.1415
 #endif // M_PI
+
+/*==================== Game Platform ====================*/
+
+// Log =====================
+enum log_level_p {
+  LOG_INFO,    //
+  LOG_SUCCESS, //
+  LOG_WARNING, //
+  LOG_ERROR,   //
+  LOG_FATAL    //
+};
+
+void create_log_p(enum log_level_p level, const char *context, const char *format, ...);
 
 // All OpenGL functions // Temp
 extern struct GL_API GL;
@@ -202,7 +216,7 @@ struct buttom_f {
   }
 
 // Levels in C
-struct level_f {
+struct level_c_f {
   void (*on_level_start)();
   void (*on_level_update)(float delta_time);
   void (*on_level_draw)(float delta_time);
@@ -234,14 +248,6 @@ struct window_api_p {
 enum platform_p {
   WINDOWS, //
   LINUX,   //
-};
-
-enum log_level_p {
-  LOG_INFO,    //
-  LOG_SUCCESS, //
-  LOG_WARNING, //
-  LOG_ERROR,   //
-  LOG_FATAL    //
 };
 
 enum keybord_p {
@@ -401,6 +407,7 @@ void clear_background_g(struct color_f color);
 int get_camera_mode_g();
 void set_camera_mode_g(enum camera_mode_f mode);
 struct mat4_f get_projection_matrix_g();
+struct mat4_f get_view_matrix_g();
 struct texture_f create_texture_g(struct image_f *image);
 void destroy_texture_g(struct texture_f texture);
 struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect);
@@ -415,9 +422,6 @@ void *load_library_p(const char *library_name);
 bool free_library_p(void *library);
 void *get_function_p(void *library, const char *name);
 void get_functions_p(void *library, void *api, const char **names);
-
-// Log =====================
-void create_log_p(enum log_level_p level, const char *context, const char *format, ...);
 
 /*==================== Game Framework ====================*/
 
@@ -467,7 +471,7 @@ void update_buttom_f(struct buttom_f *buttom);
 const char *get_file_extension_f(const char *file_name);
 
 // Game
-void open_level_f(struct level_f level);
+void open_level_c_f(struct level_c_f level);
 
 // Matrix =====================
 struct mat4_f matrix_identity_f();

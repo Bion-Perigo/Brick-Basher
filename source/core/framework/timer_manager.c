@@ -16,15 +16,12 @@ void end_time_f() {
   end_time = get_time_p();
 
   fps_ms = end_time - begin_time;
-
-  if (fps_target != 0.f) {
-    float w_time = fps_target - fps_ms;
-    if (fps_ms < fps_target) {
-      wait_time_p(fps_target - fps_ms);
-      fps_ms += w_time;
+  if(fps_target != 0){
+    while(fps_ms <= fps_target){
+      // Matando o tempo pra ele não me matar \_(-_-)_/
+      fps_ms = get_time_p() - begin_time;
     }
   }
-
   fps_current = 1 / fps_ms;
 }
 

@@ -133,7 +133,6 @@ float get_time_p() {
   struct timespec spec = {0};
   clock_gettime(CLOCK_MONOTONIC, &spec);
   float time = spec.tv_sec + spec.tv_nsec / 1000000000.0;
-  time /= 1000;
   return time;
 }
 

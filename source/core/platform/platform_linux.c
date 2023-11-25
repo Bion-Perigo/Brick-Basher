@@ -122,8 +122,10 @@ bool get_show_cursor_p() {
 }
 
 void set_show_cursor_p(bool b_show) {
-  b_show_cursor = b_show;
-  CALL_API(win_api.on_show_cursor, 0, b_show);
+  if(b_show_cursor != b_show){
+    b_show_cursor = b_show;
+    CALL_API(win_api.on_show_cursor, 0, b_show);
+  }
 }
 
 void quit_game_p() {

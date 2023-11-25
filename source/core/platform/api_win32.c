@@ -24,7 +24,7 @@ extern int mouse_position[2];
 
 /*==================== APIs ====================*/
 
-void *lib_user = NULL;
+static void *lib_user = NULL;
 
 static const char *lib_user_names[] = {
     "SetWindowTextA",    //
@@ -172,8 +172,8 @@ struct window_p *api_win32_create_window(int width, int height, const char *titl
   G_LOG(LOG_INFO, "Init Window => Width:%d Height:%d Title:%s", width, height, title);
 
   // Necessary so that the cursor can be changed after creating the window.
-  set_show_cursor_p(false);
-  set_show_cursor_p(true);
+  //set_show_cursor_p(false);
+  //set_show_cursor_p(true);
 
   return win;
 }

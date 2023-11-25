@@ -14,7 +14,7 @@ int brick_main(int argc, char **argv) {
 
   init_window_p(width, height, "Brick-Basher");
   set_target_fps_f(target_fps);
-  set_show_cursor_p(false);
+  //set_show_cursor_p(false);
 
   game_start();
 

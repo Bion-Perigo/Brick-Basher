@@ -26,7 +26,7 @@ void init_graphic_g() {
 }
 
 void update_graphic_g() {
-  G_LOG(LOG_INFO, "UPDATE GRAPHIC");
+  
 }
 
 void clear_background_g(struct color_f color) {

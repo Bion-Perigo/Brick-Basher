@@ -44,7 +44,7 @@ void level_start() {
   set_show_cursor_p(false);
 
   level->ball_speed = (struct vector2_f){50.f, 160.f};
-  level->max_speed = 70.f;
+  level->max_speed = 55.f;
   level->normal_speed = 50.f;
   level->gravity = 0.2f;
   level->ball_stopped = true;

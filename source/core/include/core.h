@@ -48,9 +48,10 @@ extern struct GL_API GL;
 enum window_anchor_f {
   SCREEN_LEFT = 0,
   SCREEN_RIGHT = 100,
-  SCREEN_TOP = 100,
+  SCREEN_TOP = 56,
   SCREEN_BOTTON = 0,
-  SCREEN_CENTER = 50,
+  SCREEN_X_CENTER = 50,
+  SCREEN_Y_CENTER = 28,
 };
 
 enum camera_mode_f {
@@ -391,29 +392,30 @@ int get_window_width_p();
 int get_window_height_p();
 void set_show_cursor_p(bool b_show);
 bool get_show_cursor_p();
+void quit_game_p();
 bool init_opengl_p(int major, int minor, int color_bits, int depth_bits);
 void begin_frame_p();
 void end_frame_p();
-
-// Functionalities ====================
-void quit_game_p();
-float get_time_p();
-void wait_time_p(double time);
+double get_time_p();
+void set_target_fps_p(int max_fps);
+double get_frametime_p();
+int get_framerate_p();
 
 /*==================== Game Graphic ====================*/
 void init_graphic_g();
 void update_graphic_g();
+void resize_viewport_g(struct rect_f viewport);
 void clear_background_g(struct color_f color);
 int get_camera_mode_g();
 void set_camera_mode_g(enum camera_mode_f mode);
-struct mat4_f get_projection_matrix_g();
+struct mat4_f get_proj_matrix_g();
 struct mat4_f get_view_matrix_g();
 struct texture_f create_texture_g(struct image_f *image);
 void destroy_texture_g(struct texture_f texture);
 struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect);
 struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect);
 void destroy_sprite_g(struct sprite_f sprite);
-void draw_sprite_g(struct sprite_f sprite);
+void draw_sprite_g(struct sprite_f sprite, struct color_f color);
 void create_flip_book_f(const char *file_name, int frames, int colluns, int lines);
 shader_f load_shader_g(const char *vertex_path, const char *fragment_path);
 
@@ -424,14 +426,6 @@ void *get_function_p(void *library, const char *name);
 void get_functions_p(void *library, void *api, const char **names);
 
 /*==================== Game Framework ====================*/
-
-// Timer Manager
-void update_timer_f();
-void begin_time_f();
-void end_time_f();
-void set_target_fps_f(int max_fps);
-int get_fps_f();
-float get_frametime_f();
 
 // Collision Manager =====================
 bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b);

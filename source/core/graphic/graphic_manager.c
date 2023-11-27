@@ -26,13 +26,15 @@ void init_graphic_g() {
 }
 
 void update_graphic_g() {
-  
+}
+
+void resize_viewport_g(struct rect_f viewport) {
+  GL.glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
 }
 
 void clear_background_g(struct color_f color) {
   GL.glClearColor(color.r, color.g, color.b, color.a);
   GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  GL.glViewport(0, 0, get_window_width_p(), get_window_height_p());
 }
 
 int get_camera_mode_g() {
@@ -42,21 +44,37 @@ void set_camera_mode_g(enum camera_mode_f mode) {
   camera_mode = mode;
 }
 
-struct mat4_f get_projection_matrix_g() {
-  struct mat4_f cam_proj = matrix_identity_f();
+struct mat4_f get_proj_matrix_g() {
+  static struct mat4_f cam_proj = {0};
+  static bool is_valid = false;
+  if (is_valid) {
+    return cam_proj;
+  }
+
   if (camera_mode == CAMERA_ORTHOGRAPHIC) {
-    cam_proj = matrix_init_ortho_f(SCREEN_LEFT, SCREEN_RIGHT, SCREEN_TOP, SCREEN_BOTTON, Z_NEAR, Z_FAR);
-  }else if(camera_mode == CAMERA_PERSPECTIVE){
+    cam_proj = matrix_init_ortho_f(0, SCREEN_RIGHT, SCREEN_TOP, 0, Z_NEAR, Z_FAR);
+    is_valid = true;
+  } else if (camera_mode == CAMERA_PERSPECTIVE) {
     G_LOG(LOG_WARNING, "Perspective camera not implemented");
+    cam_proj = matrix_init_perspective_f(1.f, 1.7777, Z_NEAR, Z_FAR);
+    is_valid = true;
   }
 
   return cam_proj;
 }
 
 struct mat4_f get_view_matrix_g() {
-  struct mat4_f camera_model = matrix_init_translation_f(0.f, 0.f, 0.f);
-  struct mat4_f view_matrix = matrix_inverse_f(camera_model);
-  return view_matrix;
+  static struct mat4_f m_view_matrix = {0};
+  static bool is_valid = false;
+  if (is_valid) {
+    return m_view_matrix;
+  }
+  struct mat4_f m_translate = matrix_init_translation_f(0.f, 0.f, 0.f);
+  struct mat4_f m_rotation = matrix_init_rotation_f(0.f, 0.f, 0.f);
+  struct mat4_f m_model = matrix_mult_f(m_rotation, m_translate);
+  m_view_matrix = matrix_inverse_f(m_model);
+  is_valid = true;
+  return m_view_matrix;
 }
 
 struct texture_f create_texture_g(struct image_f *image) {
@@ -169,25 +187,36 @@ void destroy_sprite_g(struct sprite_f sprite) {
   destroy_texture_g(sprite.texture);
 }
 
-void draw_sprite_g(struct sprite_f sprite) {
-  struct mat4_f m_translate = matrix_init_translation_f(sprite.position.x, sprite.position.y, sprite.position.z);
-  struct mat4_f m_rotation =
-      matrix_init_rotation_f(sprite.rotation.pitch, sprite.rotation.yaw, sprite.rotation.roll);
-  struct mat4_f m_scale = matrix_init_scale_f(sprite.scale.x, sprite.scale.y, sprite.scale.z);
-  struct mat4_f m_model = matrix_identity_f();
+void draw_sprite_g(struct sprite_f sprite, struct color_f color) {
+  static bool get_shader_ids = true;
+  static unsigned int proj_id;
+  static unsigned int view_id;
+  static unsigned int model_id;
+  static unsigned int color_id;
+  static unsigned int uv_id;
+  static unsigned int frames_id;
 
-  m_model = matrix_mult_f(m_rotation, m_scale);
+  struct vector3_f *pos = &sprite.position;
+  struct rotator_f *rot = &sprite.rotation;
+  struct vector3_f *sca = &sprite.scale;
+
+  struct mat4_f m_translate = matrix_init_translation_f(pos->x, pos->y, pos->z);
+  struct mat4_f m_rotation = matrix_init_rotation_f(rot->pitch, rot->yaw, rot->roll);
+  struct mat4_f m_scale = matrix_init_scale_f(sca->x, sca->y, sca->z);
+
+  struct mat4_f m_model = matrix_mult_f(m_rotation, m_scale);
   m_model = matrix_mult_f(m_translate, m_model);
 
-  unsigned int proj_id = GL.glGetUniformLocation(default_shader, "proj");
-  unsigned int view_id = GL.glGetUniformLocation(default_shader, "view");
-  unsigned int model_id = GL.glGetUniformLocation(default_shader, "model");
-  unsigned int color_id = GL.glGetUniformLocation(default_shader, "color");
-  unsigned int uv_id = GL.glGetUniformLocation(default_shader, "uv");
-  unsigned int frames_id = GL.glGetUniformLocation(default_shader, "frames");
-  struct color_f color = WHITE;
+  if (get_shader_ids) {
+    proj_id = GL.glGetUniformLocation(default_shader, "proj");
+    view_id = GL.glGetUniformLocation(default_shader, "view");
+    model_id = GL.glGetUniformLocation(default_shader, "model");
+    color_id = GL.glGetUniformLocation(default_shader, "color");
+    uv_id = GL.glGetUniformLocation(default_shader, "uv");
+    frames_id = GL.glGetUniformLocation(default_shader, "frames");
+  }
 
-  GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)get_projection_matrix_g().e);
+  GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)get_proj_matrix_g().e);
   GL.glUniformMatrix4fv(view_id, 1, GL_FALSE, (const float *)get_view_matrix_g().e);
   GL.glUniformMatrix4fv(model_id, 1, GL_FALSE, (const float *)m_model.e);
   GL.glUniform4fv(color_id, 1, (const float *)&color);
@@ -199,6 +228,9 @@ void draw_sprite_g(struct sprite_f sprite) {
   GL.glActiveTexture(GL_TEXTURE0);
   GL.glBindTexture(GL_TEXTURE_2D, sprite.texture.id);
   GL.glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+
+  GL.glBindVertexArray(0);
+  GL.glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 // Need to Refactor

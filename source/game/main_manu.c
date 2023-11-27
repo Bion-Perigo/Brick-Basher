@@ -37,29 +37,30 @@ struct level_c_f load_main_menu() {
 void level_start() {
   set_show_cursor_p(true);
 
-  struct rect_f bg_rect = {SCREEN_CENTER, SCREEN_CENTER, 50, 50};
+  struct rect_f bg_rect = {SCREEN_X_CENTER, SCREEN_Y_CENTER, SCREEN_RIGHT / 2.f, SCREEN_TOP / 2.f};
   level->background = create_sprite_g(FIND_ASSET("texture/main_menu/background.bmp"), bg_rect);
   level->background.position.z = -1;
-  struct rect_f credit_rect = {SCREEN_CENTER, SCREEN_BOTTON + 10, 45, 3};
+
+  struct rect_f credit_rect = {SCREEN_X_CENTER, SCREEN_BOTTON + 7, SCREEN_RIGHT / 2 - 5, 2.5};
   level->credit = create_sprite_g(FIND_ASSET("texture/main_menu/credit.bmp"), credit_rect);
 
-  struct rect_f title_rect = {SCREEN_CENTER, SCREEN_TOP - 20, 40, 20};
+  struct rect_f title_rect = {SCREEN_X_CENTER, SCREEN_TOP - 15, 30, 10};
   level->title = create_sprite_g(FIND_ASSET("texture/main_menu/title.bmp"), title_rect);
 
-  struct rect_f start_game_rect = {SCREEN_CENTER, SCREEN_CENTER, 8, 2};
+  struct rect_f start_game_rect = {SCREEN_X_CENTER, SCREEN_Y_CENTER, 5, 2};
   level->btn_start_game.icon = create_sprite_g(FIND_ASSET("texture/main_menu/start_game.bmp"), start_game_rect);
   level->btn_start_game.on_hovered = &buttom_on_hovered;
   level->btn_start_game.on_unhovered = &buttom_on_unhovered;
   level->btn_start_game.on_pressed = &buttom_on_start_game;
 
-  struct rect_f fullscreen_rect = {SCREEN_CENTER, 40, 13, 3};
+  struct rect_f fullscreen_rect = {SCREEN_X_CENTER, SCREEN_Y_CENTER - 6, 10, 2};
   level->btn_fullscreen = create_buttom_f(fullscreen_rect);
   level->btn_fullscreen.icon = create_sprite_g(FIND_ASSET("texture/main_menu/fullscreen.bmp"), fullscreen_rect);
   level->btn_fullscreen.on_hovered = &buttom_on_hovered;
   level->btn_fullscreen.on_unhovered = &buttom_on_unhovered;
   level->btn_fullscreen.on_pressed = &buttom_on_set_fullscreen;
 
-  struct rect_f quit_game_rect = {SCREEN_CENTER, SCREEN_CENTER - 20, 13, 2};
+  struct rect_f quit_game_rect = {SCREEN_X_CENTER, SCREEN_Y_CENTER - 12, 10, 1.5};
   level->btn_quit_game = create_buttom_f(quit_game_rect);
   level->btn_quit_game.icon = create_sprite_g(FIND_ASSET("texture/main_menu/quit_game.bmp"), quit_game_rect);
   level->btn_quit_game.on_hovered = &buttom_on_hovered;
@@ -81,12 +82,12 @@ void level_update(float delta_time) {
 }
 
 void level_draw(float delta_time) {
-  draw_sprite_g(level->background);
-  draw_sprite_g(level->title);
-  draw_sprite_g(level->credit);
-  draw_sprite_g(level->btn_start_game.icon);
-  draw_sprite_g(level->btn_fullscreen.icon);
-  draw_sprite_g(level->btn_quit_game.icon);
+  draw_sprite_g(level->background, WHITE);
+  draw_sprite_g(level->title, WHITE);
+  draw_sprite_g(level->credit, WHITE);
+  draw_sprite_g(level->btn_start_game.icon, WHITE);
+  draw_sprite_g(level->btn_fullscreen.icon, WHITE);
+  draw_sprite_g(level->btn_quit_game.icon, WHITE);
 }
 
 void level_end() {

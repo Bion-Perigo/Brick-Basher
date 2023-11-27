@@ -17,6 +17,6 @@ void main(){
 	if(texColor.a < 0.2)
 		discard;
 		
-	fragColor = texColor * vertColor * color;
+	fragColor = texColor * color * vertColor;
 	
 }

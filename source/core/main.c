@@ -13,7 +13,7 @@ int brick_main(int argc, char **argv) {
   int target_fps = 60;
 
   init_window_p(width, height, "Brick-Basher");
-  set_target_fps_f(target_fps);
+  set_target_fps_p(target_fps);
   //set_show_cursor_p(false);
 
   game_start();
@@ -21,8 +21,8 @@ int brick_main(int argc, char **argv) {
   while (!window_should_close_p()) {
     begin_frame_p();
     clear_background_g(DARK_GRAY);
-    game_update(get_frametime_f());
-    game_draw(get_frametime_f());
+    game_update(get_frametime_p());
+    game_draw(get_frametime_p());
     end_frame_p();
   }
 

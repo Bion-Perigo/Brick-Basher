@@ -193,6 +193,8 @@ void api_x11_update_window() {
     case ConfigureNotify: {
       x11_window.window.width = event.xconfigurerequest.width;
       x11_window.window.height = event.xconfigurerequest.height;
+      struct rect_f viewport = {0, 0, x11_window.window.width, x11_window.window.height};
+      resize_viewport_g(viewport);
     } break;
     case MotionNotify: {
       if (event.xmotion.window == x11_window.window.window) {
@@ -265,8 +267,8 @@ void api_x11_set_show_mouse(bool b_show) {
 
 void api_x11_set_window_title_info() {
   struct window_p *win = &x11_window.window;
-  int fps = get_fps_f();
-  float ms = get_frametime_f();
+  int fps = get_framerate_p();
+  float ms = get_frametime_p();
   char buffer[100] = "";
   sprintf(buffer, "%s (Debug Mode) => FPS:%d | Ms:%.6f", win->title, fps, ms);
   x11_api.XStoreName(win->display, win->window, buffer);

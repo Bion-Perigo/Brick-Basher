@@ -1,4 +1,3 @@
-#include <bits/types/struct_timespec.h>
 #ifdef PLATFORM_LINUX
 #include "EGL/egl.h"
 #include "EGL/eglplatform.h"
@@ -7,6 +6,7 @@
 #include "core.h"
 
 #include <bits/time.h>
+#include <bits/types/struct_timespec.h>
 #include <dlfcn.h>
 #include <stdarg.h>
 #include <stdbool.h>

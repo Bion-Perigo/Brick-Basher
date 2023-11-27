@@ -24,7 +24,7 @@ extern int mouse_position[2];
 
 /*==================== APIs ====================*/
 
-void *lib_user = NULL;
+static void *lib_user = NULL;
 
 static const char *lib_user_names[] = {
     "SetWindowTextA",    //
@@ -172,8 +172,8 @@ struct window_p *api_win32_create_window(int width, int height, const char *titl
   G_LOG(LOG_INFO, "Init Window => Width:%d Height:%d Title:%s", width, height, title);
 
   // Necessary so that the cursor can be changed after creating the window.
-  set_show_cursor_p(false);
-  set_show_cursor_p(true);
+  // set_show_cursor_p(false);
+  // set_show_cursor_p(true);
 
   return win;
 }
@@ -288,6 +288,9 @@ void api_win32_set_window_fullscreen() {
     api_user.SetWindowPos(
         window, NULL, win32_window.last_pos_x, win32_window.last_pos_y, win->width, win->height, SWP_SHOWWINDOW);
   }
+
+  struct rect_f viewport = {0, 0, win->width, win->height};
+  resize_viewport_g(viewport);
 }
 
 void api_win32_set_show_cursor(bool b_show) {
@@ -297,8 +300,8 @@ void api_win32_set_show_cursor(bool b_show) {
 void api_win32_set_window_title_info() {
   struct window_p *win = &win32_window.main_window;
   char buffer[100] = {""};
-  int fps = get_fps_f();
-  float ms = get_frametime_f();
+  int fps = get_framerate_p();
+  float ms = get_frametime_p();
   sprintf(buffer, "%s (Debug Mode) => FPS:%d | Ms:%f", win->title, fps, ms);
   api_user.SetWindowTextA(win->window, buffer);
 }

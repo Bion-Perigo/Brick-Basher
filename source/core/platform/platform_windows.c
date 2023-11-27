@@ -69,8 +69,12 @@ static struct win_console {
 
 static struct window_api_p win_api;
 static struct window_p *main_window;
-static LARGE_INTEGER api_win_time_frequency;
-static bool b_show_cursor = false;
+static LARGE_INTEGER time_frequency;
+static LARGE_INTEGER time_begin;
+static LARGE_INTEGER time_end;
+static double time_target;
+static double time_frametime;
+static bool b_show_cursor = true;
 
 /*==================== Definitions ====================*/
 
@@ -84,7 +88,7 @@ struct window_p *init_window_p(int width, int height, const char *title) {
   if (api_win_init(&win_api)) {
     G_LOG(LOG_INFO, "API WIN32 Initialized");
     main_window = CALL_API(win_api.on_create_window, NULL, width, height, title);
-    QueryPerformanceFrequency(&api_win_time_frequency);
+    QueryPerformanceFrequency(&time_frequency);
     if (!init_opengl_p(3, 3, 8, 24)) {
       G_LOG(LOG_FATAL, "OpenGL Not Initialized");
       return NULL;
@@ -135,25 +139,13 @@ bool get_show_cursor_p() {
 }
 
 void set_show_cursor_p(bool b_show) {
-  b_show_cursor = b_show;
-  CALL_API(win_api.on_show_cursor, 0, b_show);
+  if (b_show_cursor != b_show) {
+    b_show_cursor = b_show;
+    CALL_API(win_api.on_show_cursor, 0, b_show);
+  }
 }
 void quit_game_p() {
   main_window->should_close = true;
-}
-
-float get_time_p() {
-  float time = 0;
-  LARGE_INTEGER begin;
-  QueryPerformanceCounter(&begin);
-  time = begin.QuadPart;
-  time = (float)(time / (double)(api_win_time_frequency.QuadPart));
-
-  return time;
-}
-
-void wait_time_p(double time) {
-  Sleep(time);
 }
 
 // Graphic =====================
@@ -287,13 +279,47 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
 }
 
 void begin_frame_p() {
-  begin_time_f();
+  QueryPerformanceCounter(&time_begin);
   update_window_p();
 }
 
 void end_frame_p() {
   api_gdi.SwapBuffers(main_window->display);
-  end_time_f();
+  QueryPerformanceCounter(&time_end);
+  long long elapsed = time_end.QuadPart - time_begin.QuadPart;
+  time_frametime = (double)elapsed / (double)time_frequency.QuadPart;
+
+  if (time_target > 0.f) {
+    while (time_frametime < time_target) {
+      QueryPerformanceCounter(&time_end);
+      elapsed = time_end.QuadPart - time_begin.QuadPart;
+      time_frametime = (float)elapsed / (double)time_frequency.QuadPart;
+    }
+  }
+}
+
+double get_time_p() {
+  LARGE_INTEGER counter;
+  double time = 0.f;
+  QueryPerformanceCounter(&counter);
+  time = counter.QuadPart;
+  time = (float)(time / (double)(time_frequency.QuadPart));
+  return time;
+}
+
+void set_target_fps_p(int max_fps) {
+  time_target = (max_fps > 0) ? 1.f / max_fps : 0;
+}
+
+double get_frametime_p() {
+  return time_frametime;
+}
+
+int get_framerate_p() {
+  if (1.f / time_frametime < 40) {
+    G_LOG(LOG_INFO, "FPS:%d, %f", 1.f / time_frametime, time_frametime);
+  }
+  return 1.f / time_frametime;
 }
 
 // Library =====================

@@ -6,6 +6,7 @@
 #include "core.h"
 
 #include <bits/time.h>
+#include <bits/types/struct_timespec.h>
 #include <dlfcn.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -19,10 +20,6 @@ extern bool api_x11_init(struct window_api_p *win_api);
 extern bool api_gl_init(const char *lib_name);
 
 /*==================== Variables ====================*/
-
-static struct window_api_p win_api;
-static bool b_show_cursor = false;
-static void *lib_egl = NULL;
 
 static const char *egl_names[] = {
     "eglGetDisplay",          //
@@ -54,7 +51,15 @@ static struct egl_info {
   EGLContext *context;
 } egl_info;
 
+#define TO_SECONDS 1000000000.0
+static struct window_api_p win_api;
+static bool b_show_cursor = false;
+static void *lib_egl = NULL;
 static struct window_p *main_window;
+static double time_begin;
+static double time_end;
+static double time_target;
+static double time_delta_time;
 
 /*==================== Declaration ====================*/
 
@@ -122,34 +127,14 @@ bool get_show_cursor_p() {
 }
 
 void set_show_cursor_p(bool b_show) {
-  b_show_cursor = b_show;
-  CALL_API(win_api.on_show_cursor, 0, b_show);
+  if (b_show_cursor != b_show) {
+    b_show_cursor = b_show;
+    CALL_API(win_api.on_show_cursor, 0, b_show);
+  }
 }
 
 void quit_game_p() {
   main_window->should_close = true;
-}
-float get_time_p() {
-  struct timespec spec = {0};
-  clock_gettime(CLOCK_MONOTONIC, &spec);
-  float time = spec.tv_sec + spec.tv_nsec / 1000000000.0;
-  time /= 1000;
-  return time;
-}
-
-void wait_time_p(double time) {
-  if (time <= 0) {
-    return;
-  }
-  struct timespec req = {0};
-  time_t sec = time;
-  long n_sec = (time - sec) * 1000000000L;
-  req.tv_sec = sec;
-  req.tv_nsec = n_sec;
-
-  while (nanosleep(&req, &req) == 1) {
-    continue;
-  }
 }
 
 // Graphic =========================================
@@ -237,13 +222,45 @@ bool init_opengl_p(int major, int minor, int color_bits, int depth_bits) {
 }
 
 void begin_frame_p() {
-  begin_time_f();
+  struct timespec time = {0};
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time);
+  time_begin = time.tv_sec + time.tv_nsec / TO_SECONDS;
   CALL_API(win_api.on_update_window, 0);
 }
 
 void end_frame_p() {
   egl_api.eglSwapBuffers(egl_info.display, egl_info.surface);
-  end_time_f();
+
+  struct timespec time = {0};
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time);
+  time_end = time.tv_sec + time.tv_nsec / TO_SECONDS;
+
+  if (time_target > 0) {
+    while ((time_delta_time = time_end - time_begin) < time_target) {
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time);
+      time_end = time.tv_sec + time.tv_nsec / TO_SECONDS;
+    }
+  }
+}
+
+double get_time_p() {
+  struct timespec time = {0};
+  double ret_val = 0.f;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time);
+  ret_val = time.tv_sec + time.tv_nsec / TO_SECONDS;
+  return ret_val;
+}
+
+void set_target_fps_p(int max_fps) {
+  time_target = (max_fps > 0) ? 1.f / max_fps : 0;
+}
+
+double get_frametime_p() {
+  return time_delta_time;
+}
+
+int get_framerate_p() {
+  return 1 / time_delta_time;
 }
 
 // Library =========================================

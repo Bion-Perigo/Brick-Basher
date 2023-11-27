@@ -2,9 +2,9 @@
 
 #include <stdbool.h>
 
-#define BRICK_COUNT 33
+#define BRICK_COUNT 35
 
-extern struct level_f load_main_menu();
+extern struct level_c_f load_main_menu();
 
 // Declaration
 static void level_start();
@@ -15,164 +15,174 @@ static void level_end();
 static struct level_1 {
   struct sprite_f level;
   struct sprite_f player;
+  struct sprite_f life;
   struct sprite_f ball;
   struct sprite_f bricks[BRICK_COUNT];
   struct texture_f brick_texture;
-  struct vector2_f ball_speed;
-  float normal_speed;
-  float max_speed;
-  float gravity;
+  struct vector2_f ball_velocity;
+  float ball_speed;
   float right_value;
+  float player_speed;
   bool ball_stopped;
   int player_life;
-} * this;
+  double time;
+} * level;
 
-struct level_f load_level_1() {
-  struct level_f level = {0};
-  level.on_level_start = &level_start;
-  level.on_level_update = &level_update;
-  level.on_level_draw = &level_draw;
-  level.on_level_end = &level_end;
-  this = (struct level_1 *)get_memory_f(sizeof(struct level_1));
-  return level;
+struct level_c_f load_level_1() {
+  struct level_c_f lv = {0};
+  lv.on_level_start = &level_start;
+  lv.on_level_update = &level_update;
+  lv.on_level_draw = &level_draw;
+  lv.on_level_end = &level_end;
+  level = (struct level_1 *)get_memory_f(sizeof(struct level_1));
+  return lv;
 }
 
 void level_start() {
   set_show_cursor_p(false);
 
-  this->ball_speed = (struct vector2_f){50.f, 50.f};
-  this->max_speed = 100.f;
-  this->normal_speed = 50.f;
-  this->gravity = 0.01f;
-  this->ball_stopped = true;
-  this->right_value = 1.f;
-  this->player_life = 3;
+  level->ball_velocity = (struct vector2_f){50.f, 160.f};
+  level->ball_speed = 50.f;
+  level->ball_stopped = true;
+  level->right_value = 1.f;
+  level->player_life = 3;
+  level->player_speed = 100.f;
 
-  struct rect_f level_rect = {SCREEN_LEFT + 50, SCREEN_BOTTON + 50, 50, 50};
-  this->level = create_sprite_g(FIND_ASSET("texture/actors/level_1_background.bmp"), level_rect);
-  this->level.position.z = -1; // Set Backgroud Position
+  struct rect_f level_rect = {SCREEN_X_CENTER, SCREEN_Y_CENTER, SCREEN_RIGHT / 2.f, SCREEN_TOP / 2.f};
+  level->level = create_sprite_g(FIND_ASSET("texture/actors/level_1_background.bmp"), level_rect);
+  level->level.position.z = -1; // Set Backgroud Position
 
-  struct rect_f player_rect = {50.f, 2.f, 6.f, 3.f};
-  this->player = create_sprite_g(FIND_ASSET("texture/actors/player.bmp"), player_rect);
+  struct rect_f player_rect = {50.f, 2.f, 8.f, 2.f};
+  level->player = create_sprite_g(FIND_ASSET("texture/actors/player.bmp"), player_rect);
 
-  struct rect_f ball_rect = {0.f, 0.f, 2.f, 2.f};
-  this->ball = create_sprite_g(FIND_ASSET("texture/actors/ball.bmp"), ball_rect);
+  struct rect_f life_rect = {SCREEN_X_CENTER, SCREEN_Y_CENTER, 1.5, 1.5};
+  level->life = create_sprite_g(FIND_ASSET("texture/actors/life.bmp"), life_rect);
+  level->life.frames.x = 4;
+  level->life.uv.x = level->life.frames.x - 1;
+
+  struct rect_f ball_rect = {0.f, 0.f, 1.5f, 1.5f};
+  level->ball = create_sprite_g(FIND_ASSET("texture/actors/ball.bmp"), ball_rect);
 
   struct rect_f brick_rect[BRICK_COUNT] = {0};
-  this->brick_texture = load_texture_f(FIND_ASSET("texture/actors/brick.bmp"));
+  level->brick_texture = load_texture_f(FIND_ASSET("texture/actors/brick.bmp"));
 
-  struct vector2_f brick_size = {4, 2};
-  float min_distance = 5.f + brick_size.x;
-  int per_line = 11;
+  struct vector2_f brick_size = {4, 1.5};
+  float min_distance = 10.f + brick_size.x;
+  int per_line = 7;
   int colluns = 0;
   int lines = 1;
   for (int i = 0; i < BRICK_COUNT; i++) {
     float pos_x = (colluns == 0) ? min_distance : 0 + SCREEN_LEFT + colluns * min_distance;
-    float pos_y = SCREEN_TOP - lines * 6;
+    float pos_y = SCREEN_TOP - lines * 4.5;
     colluns++;
     if (colluns == per_line) {
       colluns = 0;
       lines++;
     }
     brick_rect[i] = (struct rect_f){pos_x, pos_y, brick_size.x, brick_size.y};
-    this->bricks[i] = create_sprite_from_texture_g(this->brick_texture, brick_rect[i]);
+    level->bricks[i] = create_sprite_from_texture_g(level->brick_texture, brick_rect[i]);
   }
 }
 
 void level_update(float delta_time) {
-
   if (is_key_pressed_f(KEY_ESCAPE)) {
-    open_level_f(load_main_menu());
+    open_level_c_f(load_main_menu());
   }
   if (is_key_pressed_f(KEY_TAB)) {
     set_window_fullscreen_p();
   }
 
   if (is_key_repeat_f(KEY_D)) {
-    this->right_value = 1;
-    this->player.position.x += 100.f * this->right_value * get_frametime_f();
+    level->right_value = 1 * level->player_speed * delta_time;
+    level->player.position.x += level->right_value;
   }
   if (is_key_repeat_f(KEY_A)) {
-    this->right_value = -1;
-    this->player.position.x += 100.f * this->right_value * get_frametime_f();
+    level->right_value = -1 * level->player_speed * delta_time;
+    level->player.position.x += level->right_value;
   }
-  if (is_key_pressed_f(KEY_SPACE) && this->ball_stopped) {
-    this->ball_stopped = false;
-    this->ball_speed.x = this->max_speed * this->right_value;
-    this->ball_speed.y = this->max_speed;
+  if (is_key_pressed_f(KEY_SPACE) && level->ball_stopped) {
+    level->ball_stopped = false;
+    level->ball_velocity.x = level->ball_speed * level->right_value;
+    level->ball_velocity.y = level->ball_speed;
+    level->time = get_time_p();
   }
 
   for (int i = 0; i < BRICK_COUNT; i++) {
-    if (check_collision_sprite_f(this->ball, this->bricks[i])) {
-      this->bricks[i].position.y = SCREEN_TOP + 100;
+    if (check_collision_sprite_f(level->ball, level->bricks[i])) {
+      level->bricks[i].position.y = SCREEN_TOP + 100;
     }
   }
 
-  if (check_collision_sprite_f(this->player, this->ball)) {
-    this->ball_speed.x = this->max_speed * this->right_value;
-    this->ball_speed.y = this->max_speed;
+  if (check_collision_sprite_f(level->player, level->ball)) {
+    level->ball_velocity.x = level->ball_speed * level->right_value;
+    level->ball_velocity.y = level->ball_speed;
   }
 
-  if (this->player.position.x - this->player.scale.x < SCREEN_LEFT) {
-    this->player.position.x = SCREEN_LEFT + this->player.scale.x;
-  } else if (this->player.position.x + this->player.scale.x > SCREEN_RIGHT) {
-    this->player.position.x = SCREEN_RIGHT - this->player.scale.x;
+  if (level->player.position.x - level->player.scale.x < SCREEN_LEFT) {
+    level->player.position.x = SCREEN_LEFT + level->player.scale.x;
+  } else if (level->player.position.x + level->player.scale.x > SCREEN_RIGHT) {
+    level->player.position.x = SCREEN_RIGHT - level->player.scale.x;
   }
 
-  if (this->player.position.y - this->player.scale.y < SCREEN_BOTTON) {
-    this->player.position.y = SCREEN_BOTTON + this->player.scale.y;
-  } else if (this->player.position.y + this->player.scale.y > SCREEN_TOP) {
-    this->player.position.y = SCREEN_TOP - this->player.scale.y;
+  if (level->player.position.y - level->player.scale.y < SCREEN_BOTTON) {
+    level->player.position.y = SCREEN_BOTTON + level->player.scale.y;
+  } else if (level->player.position.y + level->player.scale.y > SCREEN_TOP) {
+    level->player.position.y = SCREEN_TOP - level->player.scale.y;
   }
 
-  if (this->ball.position.x < SCREEN_LEFT) {
-    this->ball_speed.x = this->normal_speed * 1;
-  } else if (this->ball.position.x + this->ball.scale.x > SCREEN_RIGHT) {
-    this->ball_speed.x = this->normal_speed * -1;
+  if (level->ball.position.x < SCREEN_LEFT) {
+    level->ball_velocity.x = level->ball_speed * 1;
+  } else if (level->ball.position.x + level->ball.scale.x > SCREEN_RIGHT) {
+    level->ball_velocity.x = level->ball_speed * -1;
   }
-  if (this->ball.position.y < SCREEN_BOTTON) {
-    this->ball_stopped = true;
+  if (level->ball.position.y < SCREEN_BOTTON) {
+    level->ball_stopped = true;
 
-    if (this->player_life == 0) {
-      open_level_f(load_main_menu());
+    if (level->player_life == 0) {
+      open_level_c_f(load_main_menu());
     }
-    this->player_life--;
+    level->life.uv.x -= 1;
+    level->player_life--;
 
-  } else if (this->ball.position.y + this->ball.scale.y > SCREEN_TOP) {
-    this->ball_speed.y = this->normal_speed * -1;
+  } else if (level->ball.position.y + level->ball.scale.y > SCREEN_TOP) {
+    level->ball_velocity.y = level->ball_speed * -1;
   }
 
   if (is_key_pressed_f(KEY_BACKSPACE)) {
-    destroy_texture_g(this->player.texture);
+    destroy_texture_g(level->player.texture);
   }
 
-  if (this->ball_stopped) {
-    this->ball.position.x = this->player.position.x;
-    this->ball.position.y = this->player.position.y + this->player.scale.y + this->ball.scale.y;
+  level->life.position = level->player.position;
+
+  if (level->ball_stopped) {
+    level->ball.position.x = level->player.position.x;
+    level->ball.position.y = level->player.position.y + level->player.scale.y + level->ball.scale.y;
   } else {
-    this->ball.position.x += this->ball_speed.x * get_frametime_f();
-    this->ball.position.y += this->ball_speed.y * get_frametime_f();
-    this->ball.position.y -= this->gravity;
-    this->ball.rotation.roll += 10.f * this->right_value;
+    level->ball.position.x += level->ball_velocity.x * delta_time;
+    level->ball.position.y += level->ball_velocity.y * delta_time;
+    level->ball.rotation.roll += 10.f * level->right_value;
   }
 }
 
 void level_draw(float delta_time) {
-  draw_sprite_g(this->level);
-  draw_sprite_g(this->player);
-  draw_sprite_g(this->ball);
+  draw_sprite_g(level->life, WHITE);
+  draw_sprite_g(level->level, WHITE);
+  draw_sprite_g(level->player, WHITE);
+  draw_sprite_g(level->ball, WHITE);
 
   for (int i = 0; i < BRICK_COUNT; i++) {
-    draw_sprite_g(this->bricks[i]);
+    draw_sprite_g(level->bricks[i], WHITE);
   }
 }
 
 void level_end() {
-  destroy_sprite_g(this->level);
-  destroy_sprite_g(this->player);
-  destroy_sprite_g(this->ball);
+  destroy_sprite_g(level->level);
+  destroy_sprite_g(level->player);
+  destroy_sprite_g(level->life);
+  destroy_sprite_g(level->ball);
   for (int i = 0; i < BRICK_COUNT; i++) {
-    destroy_sprite_g(this->bricks[i]);
+    destroy_sprite_g(level->bricks[i]);
   }
-  free_memory_f(this);
+  free_memory_f(level);
+  G_LOG(LOG_WARNING, "Clean Level 1");
 }

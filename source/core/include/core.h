@@ -4,12 +4,15 @@
 #include "core.h"
 
 #include <math.h>
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define CONTEXT_LOG                         " -> File:" STR(__FILE__) " Line:" STR(__LINE__)
 #define BUFFER_LOG                          1024
+#define STRING_STACK                        30
 #define NO_EXPAND(a)                        #a
 #define STR(a)                              NO_EXPAND(a)
 #define CONCAT(a, b)                        a##b
@@ -18,13 +21,24 @@
 #define G_LOG(log_level, format, ...)       create_log_p(log_level, CONTEXT_LOG, format, ##__VA_ARGS__);
 #define CALL_API(function_ptr, return, ...) (function_ptr != NULL) ? function_ptr(__VA_ARGS__) : return
 
-/*==================== Game Platform ====================*/
-
 typedef unsigned int shader_f;
 
 #ifndef M_PI
 #define M_PI 3.1415
 #endif // M_PI
+
+/*==================== Game Platform ====================*/
+
+// Log =====================
+enum log_level_p {
+  LOG_INFO,    //
+  LOG_SUCCESS, //
+  LOG_WARNING, //
+  LOG_ERROR,   //
+  LOG_FATAL    //
+};
+
+void create_log_p(enum log_level_p level, const char *context, const char *format, ...);
 
 // All OpenGL functions // Temp
 extern struct GL_API GL;
@@ -32,15 +46,12 @@ extern struct GL_API GL;
 /*==================== Game Framework ====================*/
 
 enum window_anchor_f {
-  SCREEN_TOP_LEFT = 0,
-  SCREEN_TOP_RIGHT = 100,
-  SCREEN_BOTTOM_LEFT = 0,
-  SCREEN_BOTTOM_RIGHT = 100,
   SCREEN_LEFT = 0,
   SCREEN_RIGHT = 100,
-  SCREEN_TOP = 100,
+  SCREEN_TOP = 56,
   SCREEN_BOTTON = 0,
-  SCREEN_CENTER = 50,
+  SCREEN_X_CENTER = 50,
+  SCREEN_Y_CENTER = 28,
 };
 
 enum camera_mode_f {
@@ -106,6 +117,8 @@ struct sprite_f {
   struct vector3_f position;
   struct rotator_f rotation;
   struct vector3_f scale;
+  struct vector2_f uv;
+  struct vector2_f frames;
 };
 
 enum buttom_state_f {
@@ -204,7 +217,7 @@ struct buttom_f {
   }
 
 // Levels in C
-struct level_f {
+struct level_c_f {
   void (*on_level_start)();
   void (*on_level_update)(float delta_time);
   void (*on_level_draw)(float delta_time);
@@ -236,14 +249,6 @@ struct window_api_p {
 enum platform_p {
   WINDOWS, //
   LINUX,   //
-};
-
-enum log_level_p {
-  LOG_INFO,    //
-  LOG_SUCCESS, //
-  LOG_WARNING, //
-  LOG_ERROR,   //
-  LOG_FATAL    //
 };
 
 enum keybord_p {
@@ -387,28 +392,31 @@ int get_window_width_p();
 int get_window_height_p();
 void set_show_cursor_p(bool b_show);
 bool get_show_cursor_p();
+void quit_game_p();
 bool init_opengl_p(int major, int minor, int color_bits, int depth_bits);
 void begin_frame_p();
 void end_frame_p();
-
-// Functionalities ====================
-void quit_game_p();
-float get_time_p();
-void wait_time_p(double time);
+double get_time_p();
+void set_target_fps_p(int max_fps);
+double get_frametime_p();
+int get_framerate_p();
 
 /*==================== Game Graphic ====================*/
 void init_graphic_g();
 void update_graphic_g();
+void resize_viewport_g(struct rect_f viewport);
 void clear_background_g(struct color_f color);
 int get_camera_mode_g();
 void set_camera_mode_g(enum camera_mode_f mode);
-struct mat4_f get_projection_matrix_g();
+struct mat4_f get_proj_matrix_g();
+struct mat4_f get_view_matrix_g();
 struct texture_f create_texture_g(struct image_f *image);
 void destroy_texture_g(struct texture_f texture);
 struct sprite_f create_sprite_g(const char *texture_name, struct rect_f rect);
 struct sprite_f create_sprite_from_texture_g(struct texture_f texture, struct rect_f rect);
 void destroy_sprite_g(struct sprite_f sprite);
-void draw_sprite_g(struct sprite_f sprite);
+void draw_sprite_g(struct sprite_f sprite, struct color_f color);
+void create_flip_book_f(const char *file_name, int frames, int colluns, int lines);
 shader_f load_shader_g(const char *vertex_path, const char *fragment_path);
 
 // Library =====================
@@ -417,18 +425,7 @@ bool free_library_p(void *library);
 void *get_function_p(void *library, const char *name);
 void get_functions_p(void *library, void *api, const char **names);
 
-// Log =====================
-void create_log_p(enum log_level_p level, const char *context, const char *format, ...);
-
 /*==================== Game Framework ====================*/
-
-// Timer Manager
-void update_timer_f();
-void begin_time_f();
-void end_time_f();
-void set_target_fps_f(int max_fps);
-int get_fps_f();
-float get_frametime_f();
 
 // Collision Manager =====================
 bool check_collision_sprite_f(struct sprite_f a, struct sprite_f b);
@@ -468,7 +465,7 @@ void update_buttom_f(struct buttom_f *buttom);
 const char *get_file_extension_f(const char *file_name);
 
 // Game
-void open_level_f(struct level_f level);
+void open_level_c_f(struct level_c_f level);
 
 // Matrix =====================
 struct mat4_f matrix_identity_f();

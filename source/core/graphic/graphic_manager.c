@@ -214,6 +214,7 @@ void draw_sprite_g(struct sprite_f sprite, struct color_f color) {
     color_id = GL.glGetUniformLocation(default_shader, "color");
     uv_id = GL.glGetUniformLocation(default_shader, "uv");
     frames_id = GL.glGetUniformLocation(default_shader, "frames");
+    get_shader_ids = false;
   }
 
   GL.glUniformMatrix4fv(proj_id, 1, GL_FALSE, (const float *)get_proj_matrix_g().e);

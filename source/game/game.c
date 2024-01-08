@@ -19,7 +19,6 @@ void open_level_c_f(struct level_c_f level) {
 
 void game_start() {
   open_level_c_f(load_main_menu());
-  current_level.on_level_start();
 }
 
 void game_update(float delta_time) {
